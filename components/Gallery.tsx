@@ -14,7 +14,7 @@ export type GPhoto = {
   createdAt: string;
 };
 
-const COLORS = ["#e0562a", "#2e5b4e", "#7b4b94", "#c08a1e", "#2f6fa3", "#a23b5a", "#4d7a2a"];
+const COLORS = ["#3a3a40", "#4a4a52", "#2c2c31", "#55555d", "#38383e", "#606068", "#46464d"];
 export const colorFor = (s: string) => COLORS[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % COLORS.length];
 
 export function Gallery({
