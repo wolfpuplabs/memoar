@@ -35,9 +35,9 @@ export function HowItWorks({ t, headingLevel = 2 }: { t: Dict; headingLevel?: 1 
   );
 }
 
-export function Faq({ t }: { t: Dict }) {
+export function Faq({ t, light = false }: { t: Dict; light?: boolean }) {
   return (
-    <section className="section" style={{ paddingTop: 24 }}>
+    <section className={`section ${light ? "section-light" : ""}`} style={light ? undefined : { paddingTop: 24 }}>
       <div className="wrap narrow">
         <div className="section-head">
           <h2>{t.how.faqTitle}</h2>

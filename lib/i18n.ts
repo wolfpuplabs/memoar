@@ -89,6 +89,19 @@ const id = {
       { q: "Berapa lama foto disimpan?", a: "30 hari setelah foto dicuci. Setelah itu foto dan data acara dihapus otomatis, jadi unduh albummu sebelum tanggal yang tertera." },
     ],
   },
+  story: {
+    eyebrow: "Satu malam, satu roll",
+    title: "Begini cerita sebuah acara di memoar",
+    chapters: [
+      { k: "01", t: "Kamu memuat roll", d: "Beri nama acaramu, pilih tampilan film, dan tentukan berapa jepretan untuk setiap tamu. Dua menit, tanpa akun." },
+      { k: "02", t: "Satu QR di setiap meja", d: "Cetak kartu meja atau kirim link ke grup. Tamu cukup memindai — tidak ada aplikasi yang perlu dipasang." },
+      { k: "03", t: "Semua orang jadi fotografer", d: "Kamera terbuka di browser. Setiap jepretan mengurangi roll, jadi tamu memotret momen yang benar-benar berarti." },
+      { k: "04", t: "Belum boleh diintip", d: "Foto tersimpan aman tapi tersembunyi, seperti film yang belum dicuci. Rasa penasaran ikut jadi bagian acara." },
+      { k: "05", t: "Dicuci, lalu dibuka bersama", d: "Pada waktunya, ratusan sudut pandang muncul serentak. Jelajahi per tamu, lalu unduh semuanya dalam satu ZIP." },
+    ],
+    stage: { look: "Tampilan", shots: "jepretan / tamu", scan: "Scan untuk memotret", joined: "bergabung", left: "tersisa", developing: "Sedang dicuci", opens: "Dibuka dalam", album: "Album bersama", photos: "foto" },
+    rollTitle: "Dari roll para tamu",
+  },
   create: {
     title: "Buat acara",
     steps: ["Acara", "Waktu", "Tampilan", "Tamu"],
@@ -300,6 +313,19 @@ const en: Dict = {
       { q: "Can I remove inappropriate photos?", a: "Yes. From the host page you can hide or delete any photo." },
       { q: "How long are photos kept?", a: "30 days after they develop. After that, photos and event data are deleted automatically, so download your album before the date shown." },
     ],
+  },
+  story: {
+    eyebrow: "One night, one roll",
+    title: "Here's how an event unfolds on memoar",
+    chapters: [
+      { k: "01", t: "You load the roll", d: "Name your event, pick a film look and decide how many shots each guest gets. Two minutes, no account." },
+      { k: "02", t: "One QR on every table", d: "Print a table card or drop the link in the group chat. Guests just scan — nothing to install." },
+      { k: "03", t: "Everyone becomes a photographer", d: "The camera opens in the browser. Every shot uses up the roll, so guests capture the moments that matter." },
+      { k: "04", t: "No peeking", d: "Photos are saved but hidden, like undeveloped film. The anticipation becomes part of the party." },
+      { k: "05", t: "Developed, then opened together", d: "When it's time, hundreds of points of view appear at once. Browse by guest, then download everything as a ZIP." },
+    ],
+    stage: { look: "Look", shots: "shots / guest", scan: "Scan to shoot", joined: "joined", left: "left", developing: "Developing", opens: "Opens in", album: "Shared album", photos: "photos" },
+    rollTitle: "From the guests' rolls",
   },
   create: {
     title: "Create event",
