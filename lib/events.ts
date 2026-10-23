@@ -20,6 +20,7 @@ export type Visibility = (typeof VISIBILITY)[number];
 
 export const MAX_GUESTS_LIMIT = Number(process.env.MAX_GUESTS_LIMIT || 300);
 export const MAX_SHOTS = 50;
+export { RETENTION_DAYS, expiresAt } from "./retention";
 
 export type EventData = {
   id: string;

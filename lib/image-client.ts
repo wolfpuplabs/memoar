@@ -16,7 +16,7 @@ export async function developFrame(
   sh: number,
   opts: { look: string; stamp: boolean; mirror?: boolean; maxSide?: number; date?: Date }
 ): Promise<Processed> {
-  const maxSide = opts.maxSide ?? 2000;
+  const maxSide = opts.maxSide ?? 1600;
   const scale = Math.min(1, maxSide / Math.max(sw, sh));
   const w = Math.round(sw * scale);
   const h = Math.round(sh * scale);
@@ -35,13 +35,13 @@ export async function developFrame(
   ctx.putImageData(img, 0, 0);
   if (opts.stamp) drawDateStamp(ctx, w, h, opts.date);
 
-  const tScale = Math.min(1, 640 / Math.max(w, h));
+  const tScale = Math.min(1, 480 / Math.max(w, h));
   const tc = document.createElement("canvas");
   tc.width = Math.round(w * tScale);
   tc.height = Math.round(h * tScale);
   tc.getContext("2d")!.drawImage(c, 0, 0, tc.width, tc.height);
 
-  const [full, thumb] = await Promise.all([toBlob(c, 0.88), toBlob(tc, 0.78)]);
+  const [full, thumb] = await Promise.all([toBlob(c, 0.82), toBlob(tc, 0.72)]);
   return { full, thumb, width: w, height: h };
 }
 

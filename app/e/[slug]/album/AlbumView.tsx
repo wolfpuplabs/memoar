@@ -1,8 +1,9 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useT } from "@/components/I18n";
-import { Countdown } from "@/components/ui";
+import { Countdown, LocalTime } from "@/components/ui";
 import { Gallery, type GPhoto } from "@/components/Gallery";
+import { expiresAt } from "@/lib/retention";
 
 export default function AlbumView({
   slug, eventName, revealAt, revealed, hostOnly, photos, totalPhotos, mine, isGuest,
@@ -41,5 +42,14 @@ export default function AlbumView({
     );
   }
 
-  return <Gallery slug={slug} eventName={eventName} photos={photos} />;
+  return (
+    <>
+      {revealed && (
+        <p className="small muted" style={{ margin: "0 0 14px" }}>
+          ⏳ {t.guest.expiresOn} <b><LocalTime iso={expiresAt({ revealAt })} mode="date" /></b>
+        </p>
+      )}
+      <Gallery slug={slug} eventName={eventName} photos={photos} />
+    </>
+  );
 }

@@ -8,6 +8,7 @@ import { CopyField, Countdown, LocalTime } from "@/components/ui";
 import { QRImage, useQrDataUrl } from "@/components/QR";
 import { Gallery, colorFor, type GPhoto } from "@/components/Gallery";
 import { LOOKS } from "@/lib/filters";
+import { expiresAt } from "@/lib/retention";
 import { prepareCover, saveBlob } from "@/lib/image-client";
 
 type Ev = {
@@ -115,12 +116,13 @@ export default function Dashboard({
             <div className="v">{guests.length} <small>/ {ev.maxGuests}</small></div>
           </div>
           <div className="card stat">
-            <div className="k">{revealed ? t.admin.revealedAt : t.admin.revealAt}</div>
+            <div className="k">{revealed ? t.admin.expiresOn : t.admin.revealAt}</div>
             <div className="v text">
-              {revealed ? <LocalTime iso={ev.revealAt} /> : <Countdown iso={ev.revealAt} onDone={() => router.refresh()} />}
+              {revealed ? <LocalTime iso={expiresAt(ev)} mode="date" /> : <Countdown iso={ev.revealAt} onDone={() => router.refresh()} />}
             </div>
           </div>
         </div>
+        <p className="hint" style={{ margin: "-6px 0 18px" }}>⏳ {t.admin.expiresNote}</p>
 
         <div className="tabs" role="tablist">
           {(["album", "share", "guests", "settings"] as const).map((k) => (
