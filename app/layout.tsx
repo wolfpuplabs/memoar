@@ -17,6 +17,17 @@ export const metadata: Metadata = {
   title: { default: "memoar — kamera sekali pakai untuk acaramu", template: "%s · memoar" },
   description,
   applicationName: "memoar",
+  // Plain root paths (no query strings) so every browser's "Add to Home Screen" finds them.
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   appleWebApp: { capable: true, title: "memoar", statusBarStyle: "default" },
   formatDetection: { telephone: false },
   openGraph: {
