@@ -5,8 +5,8 @@ import { getDict, type Lang } from "./i18n";
 export async function getLang(): Promise<Lang> {
   const c = (await cookies()).get("lang")?.value;
   if (c === "en" || c === "id") return c;
-  const accept = (await headers()).get("accept-language") || "";
-  return /^en\b/i.test(accept) && !/\bid\b/i.test(accept) ? "en" : "id";
+  // English is the default; Indonesian is one tap away via the ID/EN toggle.
+  return "en";
 }
 
 export async function getT() {

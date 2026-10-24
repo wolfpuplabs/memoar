@@ -90,6 +90,7 @@ const id = {
     ],
   },
   story: {
+    demo: "Nikahan Raka & Dinda",
     eyebrow: "Satu malam, satu roll",
     title: "Begini cerita sebuah acara di memoar",
     chapters: [
@@ -315,6 +316,7 @@ const en: Dict = {
     ],
   },
   story: {
+    demo: "Raka & Dinda's Wedding",
     eyebrow: "One night, one roll",
     title: "Here's how an event unfolds on memoar",
     chapters: [

@@ -104,7 +104,7 @@ export async function downloadPhotos(
     return r.blob();
   };
   const name = (p: { id: string; guestName: string | null }, i: number) => {
-    const who = (p.guestName || "tamu").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "tamu";
+    const who = (p.guestName || "guest").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "guest";
     return `${String(i + 1).padStart(3, "0")}-${who}-${p.id}.jpg`;
   };
   if (photos.length === 1) {

@@ -10,11 +10,11 @@ const siteUrl =
     : "http://localhost:3000");
 
 const description =
-  "Ubah ponsel tamu menjadi kamera film saku. Satu kode QR, tanpa aplikasi, jepretan terbatas, dan semua foto dicuci bersamaan.";
+  "Turn your guests' phones into pocket film cameras. One QR code, no app, limited shots, and every photo develops at the same time.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: { default: "memoar — kamera sekali pakai untuk acaramu", template: "%s · memoar" },
+  title: { default: "memoar — a disposable camera for your event", template: "%s · memoar" },
   description,
   applicationName: "memoar",
   // Plain root paths (no query strings) so every browser's "Add to Home Screen" finds them.
@@ -33,11 +33,12 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "memoar",
-    locale: "id_ID",
-    title: "memoar — kamera sekali pakai untuk acaramu",
+    locale: "en_US",
+    alternateLocale: ["id_ID"],
+    title: "memoar — a disposable camera for your event",
     description,
   },
-  twitter: { card: "summary_large_image", title: "memoar — kamera sekali pakai untuk acaramu", description },
+  twitter: { card: "summary_large_image", title: "memoar — a disposable camera for your event", description },
 };
 
 export const viewport: Viewport = {

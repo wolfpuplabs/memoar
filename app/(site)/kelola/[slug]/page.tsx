@@ -5,7 +5,7 @@ import { adminToken } from "@/lib/auth";
 import { getT, siteOrigin } from "@/lib/i18n-server";
 import Dashboard from "./Dashboard";
 
-export const metadata: Metadata = { title: "Kelola acara", robots: { index: false } };
+export const metadata: Metadata = { title: "Manage event", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
 export default async function ManagePage({

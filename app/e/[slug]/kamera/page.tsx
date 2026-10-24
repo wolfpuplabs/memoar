@@ -5,7 +5,7 @@ import { currentGuest } from "@/lib/auth";
 import Camera from "./Camera";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Kamera", robots: { index: false } };
+export const metadata: Metadata = { title: "Camera", robots: { index: false } };
 
 export default async function CameraPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

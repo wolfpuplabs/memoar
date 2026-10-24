@@ -5,7 +5,7 @@ import { getEventBySlug } from "@/lib/events";
 import { getDict } from "@/lib/i18n";
 
 export const runtime = "nodejs";
-export const alt = "Undangan memoar";
+export const alt = "memoar invitation";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -18,7 +18,7 @@ const font = (file: string) => readFile(join(process.cwd(), "assets/fonts", file
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const ev = await getEventBySlug(slug).catch(() => null);
-  const t = getDict("id");
+  const t = getDict("en");
   const [sans500, sans600, serif] = await Promise.all([
     font("PlusJakartaSans-500.woff"),
     font("PlusJakartaSans-600.woff"),
@@ -121,7 +121,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
             }}
           >
             <div style={{ width: 8, height: 8, borderRadius: 8, background: "#fff", marginRight: 10 }} />
-            {`UNDANGAN · ${(ev ? t.kinds[ev.kind] : "memoar").toUpperCase()}`}
+            {`INVITATION · ${(ev ? t.kinds[ev.kind] : "memoar").toUpperCase()}`}
           </div>
           <div
             style={{
@@ -138,7 +138,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           </div>
           {ev?.hostName && (
             <div style={{ display: "flex", alignItems: "baseline", marginTop: 18, fontSize: 28, color: "rgba(245,245,247,0.7)" }}>
-              <span style={{ fontFamily: "IS", fontStyle: "italic", fontSize: 34, color: "#fff", marginRight: 10 }}>dari</span>
+              <span style={{ fontFamily: "IS", fontStyle: "italic", fontSize: 34, color: "#fff", marginRight: 10 }}>from</span>
               {ev.hostName}
             </div>
           )}

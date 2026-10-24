@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { getT } from "@/lib/i18n-server";
 import { HowItWorks, Faq } from "@/components/HowItWorks";
 
-export const metadata: Metadata = { title: "Cara kerja" };
+export const metadata: Metadata = { title: "How it works" };
 
 export default async function HowPage() {
   const { t } = await getT();

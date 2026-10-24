@@ -3,7 +3,7 @@
  * Every scene takes an `id` prefix so several can live on one page without
  * their gradient/filter ids clashing.
  */
-import type { CSSProperties } from "react";
+import { memo, type CSSProperties } from "react";
 
 export type SceneKind = "party" | "cake" | "toast" | "dance" | "couple";
 
@@ -323,7 +323,7 @@ const SCENES: Record<SceneKind, (p: { id: string }) => React.ReactElement> = {
 };
 
 /** A full-bleed scene. `slice` crops to fill any aspect ratio (used inside the phone). */
-export function Scene({ kind, id, className, style, slice = true, lite = false }: { kind: SceneKind; id: string; className?: string; style?: CSSProperties; slice?: boolean; lite?: boolean }) {
+function SceneImpl({ kind, id, className, style, slice = true, lite = false }: { kind: SceneKind; id: string; className?: string; style?: CSSProperties; slice?: boolean; lite?: boolean }) {
   const S = SCENES[kind];
   return (
     <svg viewBox="0 0 300 400" preserveAspectRatio={slice ? "xMidYMid slice" : "xMidYMid meet"} className={`scene ${lite ? "scene-lite" : ""} ${className ?? ""}`} style={style} aria-hidden="true">
@@ -334,7 +334,7 @@ export function Scene({ kind, id, className, style, slice = true, lite = false }
 }
 
 /** A developed print: white border, scene, handwritten-style caption. */
-export function Print({ kind, id, caption, className, style, lite }: { kind: SceneKind; id: string; caption?: string; className?: string; style?: CSSProperties; lite?: boolean }) {
+function PrintImpl({ kind, id, caption, className, style, lite }: { kind: SceneKind; id: string; caption?: string; className?: string; style?: CSSProperties; lite?: boolean }) {
   return (
     <figure className={`print ${className ?? ""}`} style={style}>
       <Scene kind={kind} id={id} className="print-img" lite={lite} />
@@ -342,6 +342,10 @@ export function Print({ kind, id, caption, className, style, lite }: { kind: Sce
     </figure>
   );
 }
+
+// Memoised so scroll-driven re-renders of the story never re-diff the SVG art.
+export const Scene = memo(SceneImpl);
+export const Print = memo(PrintImpl);
 
 /* line icons for feature cards ------------------------------------------------ */
 const iconProps = { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
