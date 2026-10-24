@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useT } from "@/components/I18n";
 import { LOOKS } from "@/lib/filters";
+import LookThumb from "@/components/LookThumb";
 import { prepareCover } from "@/lib/image-client";
 
 const KINDS = ["pernikahan", "lamaran", "ulangtahun", "pesta", "wisuda", "kantor", "lainnya"];
@@ -218,10 +219,10 @@ export default function CreateWizard({ maxGuestsLimit, origin, firstFree = false
             <>
               <div className="field">
                 <span className="label">{t.create.look}</span>
-                <div className="choice-grid">
+                <div className="choice-grid look-grid">
                   {LOOKS.map((l) => (
                     <button type="button" key={l.id} className={`choice ${f.filter === l.id ? "on" : ""}`} onClick={() => up("filter", l.id)}>
-                      <div className="swatch" style={{ background: `linear-gradient(135deg, ${l.swatch[0]}, ${l.swatch[1]})` }} />
+                      <LookThumb look={l} />
                       <b>{l.name[lang]}</b>
                       <span>{l.note[lang]}</span>
                     </button>

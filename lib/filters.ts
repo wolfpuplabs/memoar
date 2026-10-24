@@ -9,6 +9,8 @@ export type Look = {
   note: { id: string; en: string };
   swatch: [string, string];
   css: string;
+  /** optional CSS background drawn over the live preview (flash hot-spot, light leak, vignette) */
+  overlay?: string;
   p: {
     exposure: number;
     contrast: number;
@@ -21,6 +23,8 @@ export type Look = {
     mono: boolean;
     grain: number; // 0..40
     vignette: number; // 0..0.8
+    flash: number; // 0..1 bright on-camera flash hot-spot in the centre
+    leak: null | { side: "left" | "right"; color: [number, number, number]; strength: number }; // light leak
   };
 };
 
@@ -36,7 +40,11 @@ const base: Look["p"] = {
   mono: false,
   grain: 0,
   vignette: 0,
+  flash: 0,
+  leak: null,
 };
+
+const VIG = (a: number) => `radial-gradient(ellipse at 50% 50%, transparent 48%, rgba(0,0,0,${a}) 100%)`;
 
 export const LOOKS: Look[] = [
   {
@@ -46,6 +54,60 @@ export const LOOKS: Look[] = [
     swatch: ["#f6c48f", "#e98d5a"],
     css: "sepia(0.18) saturate(1.1) contrast(0.95) brightness(1.06)",
     p: { ...base, exposure: 1.05, contrast: 0.94, saturation: 1.08, warmth: 12, fade: 0.06, shadows: [10, 2, -6], highlights: [8, 4, -6], grain: 10, vignette: 0.25 },
+  },
+  {
+    id: "flash",
+    name: { id: "Blitz", en: "Flash" },
+    note: { id: "Kilat langsung, wajah terang, latar gelap", en: "Direct flash, bright faces, dark background" },
+    swatch: ["#ffffff", "#2a2a33"],
+    css: "contrast(1.22) brightness(1.08) saturate(1.08)",
+    overlay: `radial-gradient(ellipse at 50% 42%, rgba(255,255,255,.2), transparent 55%), ${VIG(0.55)}`,
+    p: { ...base, exposure: 1.04, contrast: 1.22, saturation: 1.08, warmth: -4, shadows: [-4, -2, 4], highlights: [10, 10, 12], grain: 12, vignette: 0.55, flash: 0.45 },
+  },
+  {
+    id: "film35",
+    name: { id: "35mm", en: "35mm" },
+    note: { id: "Seperti rol film klasik: hangat, lembut, berbutir halus", en: "Classic film roll: warm, soft, fine grain" },
+    swatch: ["#f1d3a4", "#6f8a8c"],
+    css: "sepia(0.12) saturate(0.95) contrast(0.96) brightness(1.04)",
+    overlay: VIG(0.25),
+    p: { ...base, exposure: 1.03, contrast: 0.96, saturation: 0.92, warmth: 8, tint: 3, fade: 0.08, shadows: [-2, 4, 10], highlights: [12, 6, -8], grain: 16, vignette: 0.2 },
+  },
+  {
+    id: "disposable",
+    name: { id: "Sekali Pakai", en: "Disposable" },
+    note: { id: "Kamera sekali pakai: hijau, pekat, bocor cahaya", en: "Throwaway camera: green cast, punchy, light leak" },
+    swatch: ["#ff8a3c", "#3f5d3a"],
+    css: "contrast(1.15) saturate(1.25) brightness(1.05) hue-rotate(-6deg)",
+    overlay: `linear-gradient(90deg, transparent 60%, rgba(255,110,40,.3)), radial-gradient(ellipse at 50% 42%, rgba(255,255,255,.1), transparent 55%), ${VIG(0.6)}`,
+    p: { ...base, exposure: 1.05, contrast: 1.15, saturation: 1.2, warmth: 6, tint: -8, fade: 0.05, shadows: [-6, 8, 0], highlights: [10, 8, -10], grain: 22, vignette: 0.6, flash: 0.25, leak: { side: "right", color: [255, 110, 40], strength: 0.38 } },
+  },
+  {
+    id: "eighties",
+    name: { id: "1980-an", en: "1980s" },
+    note: { id: "Pudar, hangat kemerahan, vibe album keluarga", en: "Faded, warm magenta, family-album vibe" },
+    swatch: ["#f4a6a0", "#7a4b78"],
+    css: "sepia(0.25) saturate(1.1) contrast(0.88) brightness(1.06) hue-rotate(-12deg)",
+    overlay: `linear-gradient(270deg, transparent 62%, rgba(255,60,90,.22)), ${VIG(0.3)}`,
+    p: { ...base, exposure: 1.04, contrast: 0.88, saturation: 1.05, warmth: 14, tint: 10, fade: 0.16, shadows: [8, -2, 14], highlights: [16, 4, -6], grain: 18, vignette: 0.3, leak: { side: "left", color: [255, 60, 90], strength: 0.26 } },
+  },
+  {
+    id: "cinema",
+    name: { id: "Sinema", en: "Cinema" },
+    note: { id: "Bayangan teal, kulit oranye, kontras film", en: "Teal shadows, orange skin, movie contrast" },
+    swatch: ["#f2a65a", "#1f5f6b"],
+    css: "contrast(1.12) saturate(1.15) sepia(0.1) hue-rotate(-4deg)",
+    overlay: VIG(0.35),
+    p: { ...base, contrast: 1.12, saturation: 1.1, warmth: 4, fade: 0.04, shadows: [-12, 6, 18], highlights: [18, 6, -14], grain: 8, vignette: 0.35 },
+  },
+  {
+    id: "instant",
+    name: { id: "Instan", en: "Instant" },
+    note: { id: "Foto instan: lembut, pudar, highlight krem", en: "Instant print: soft, faded, creamy highlights" },
+    swatch: ["#f3ead6", "#8fa7b3"],
+    css: "contrast(0.86) saturate(0.85) brightness(1.08) sepia(0.08)",
+    overlay: VIG(0.25),
+    p: { ...base, exposure: 1.06, contrast: 0.86, saturation: 0.85, warmth: 4, tint: 2, fade: 0.18, shadows: [-4, 6, 14], highlights: [10, 8, 0], grain: 10, vignette: 0.25 },
   },
   {
     id: "senja",
@@ -117,6 +179,7 @@ export function applyLook(data: ImageData, look: Look) {
   const cx = w / 2;
   const cy = h / 2;
   const maxD = Math.sqrt(cx * cx + cy * cy);
+  const leak = p.leak;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = (y * w + x) * 4;
@@ -143,14 +206,28 @@ export function applyLook(data: ImageData, look: Look) {
         g += n;
         b += n;
       }
-      if (p.vignette) {
+      if (p.vignette || p.flash) {
         const dx = x - cx;
-        const dy = y - cy;
+        const dy = y - cy * 0.84; // flash sits a little above centre, on the faces
         const dist = Math.sqrt(dx * dx + dy * dy) / maxD;
-        const v = 1 - p.vignette * dist * dist;
+        let v = 1 - p.vignette * dist * dist;
+        if (p.flash) {
+          const hot = Math.max(0, 1 - dist / 0.62);
+          v *= 1 + p.flash * 0.38 * hot * hot;
+        }
         r *= v;
         g *= v;
         b *= v;
+      }
+      if (leak) {
+        const fx = x / w;
+        let k = leak.side === "right" ? (fx - 0.58) / 0.42 : (0.42 - fx) / 0.42;
+        if (k > 0) {
+          k = k * k * leak.strength * (0.65 + 0.35 * (1 - y / h));
+          r += (255 - r) * (leak.color[0] / 255) * k;
+          g += (255 - g) * (leak.color[1] / 255) * k;
+          b += (255 - b) * (leak.color[2] / 255) * k;
+        }
       }
       d[i] = clamp(r);
       d[i + 1] = clamp(g);

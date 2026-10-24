@@ -869,3 +869,16 @@ textarea { resize: vertical; min-height: 84px; }
 .me-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 10px; }
 .me-tile { position: relative; aspect-ratio: 4/5; border-radius: 12px; overflow: hidden; }
 .me-tile span { position: absolute; left: 7px; bottom: 5px; font-family: var(--serif); font-style: italic; font-size: 12px; text-shadow: 0 1px 6px rgba(0,0,0,.7); }
+
+/* look picker thumbnails (filter preview on a sample photo) */
+.look-thumb { height: auto; aspect-ratio: 4 / 5; }
+.look-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.look-thumb i { position: absolute; inset: 0; }
+.look-thumb::after { z-index: 1; opacity: .25; }
+.c2-overlay { position: absolute; inset: 0; pointer-events: none; }
+.look-grid { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); }
+.look-grid .choice { padding: 8px 8px 10px; }
+.look-grid .choice .look-thumb { aspect-ratio: 1; margin-bottom: 8px; }
+.look-grid .choice b { font-size: 14px; }
+.look-grid .choice span { font-size: 11.5px; }
+@media (max-width: 480px) { .look-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; } .look-grid .choice span { display: none; } }

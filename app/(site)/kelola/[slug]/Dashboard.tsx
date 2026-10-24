@@ -8,6 +8,7 @@ import { CopyField, Countdown, LocalTime } from "@/components/ui";
 import { QRImage, useQrDataUrl } from "@/components/QR";
 import { Gallery, colorFor, type GPhoto } from "@/components/Gallery";
 import { LOOKS } from "@/lib/filters";
+import LookThumb from "@/components/LookThumb";
 import { expiresAt } from "@/lib/retention";
 import { prepareCover, saveBlob } from "@/lib/image-client";
 import Paywall, { LockIcon, rupiah, type PayCfg } from "@/components/Paywall";
@@ -368,10 +369,10 @@ function Settings({ ev, maxGuestsLimit, lang }: { ev: Ev; maxGuestsLimit: number
         )}
         <div className="field">
           <span className="label">{t.create.look}</span>
-          <div className="choice-grid">
+          <div className="choice-grid look-grid">
             {LOOKS.map((l) => (
               <button type="button" key={l.id} className={`choice ${f.filter === l.id ? "on" : ""}`} onClick={() => up("filter", l.id)}>
-                <div className="swatch" style={{ background: `linear-gradient(135deg, ${l.swatch[0]}, ${l.swatch[1]})`, height: 30 }} />
+                <LookThumb look={l} />
                 <b>{l.name[lang]}</b>
               </button>
             ))}

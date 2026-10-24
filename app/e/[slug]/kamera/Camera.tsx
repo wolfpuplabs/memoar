@@ -246,6 +246,7 @@ export default function Camera({ slug, eventName, endsAt, look, stamp, total, us
           }}
         />
         <div className="cam-vignette" />
+        {lk.overlay && camState === "on" && !done && <div className="c2-overlay" style={{ background: lk.overlay }} />}
         <span className="c2-look">{lk.name[lang]}</span>
         {stamp && camState === "on" && !done && <span className="c2-stamp">{stampText}</span>}
         <div key={flash} className={`cam-flash ${flash ? "go" : ""}`} />
