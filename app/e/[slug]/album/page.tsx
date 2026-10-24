@@ -6,7 +6,7 @@ import { currentGuest, isAdmin } from "@/lib/auth";
 import { getT } from "@/lib/i18n-server";
 import { LangToggle, Logo } from "@/components/ui";
 import AlbumView from "./AlbumView";
-import { canDownload, publicPayConfig, reconcilePending } from "@/lib/payments";
+import { canDownload, freeDownloadState, publicPayConfig, reconcilePending } from "@/lib/payments";
 import { getEventBySlug as reloadEvent } from "@/lib/events";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +32,7 @@ export default async function AlbumPage({
   const pay = publicPayConfig();
   await reconcilePending(ev, admin).catch(() => null);
   const allowed = await canDownload((await reloadEvent(ev.slug)) ?? ev);
+  const free = await freeDownloadState(ev);
 
   return (
     <div className="album-page">
@@ -63,6 +64,8 @@ export default async function AlbumPage({
           isGuest={!!guest}
           pay={pay}
           canDownload={allowed}
+          freeLeft={free.left}
+          freeIds={free.used}
           initialOrder={order && /^[A-Z0-9-]{6,60}$/.test(order) ? order : null}
         />
       </div>

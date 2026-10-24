@@ -27,10 +27,11 @@ const toLocalInput = (iso: string) => {
 };
 
 export default function Dashboard({
-  ev, photos: initialPhotos, guests, isNew, guestUrl, adminUrl, maxGuestsLimit, pay, initialOrder,
+  ev, photos: initialPhotos, guests, isNew, guestUrl, adminUrl, maxGuestsLimit, pay, initialOrder, free,
 }: {
   ev: Ev; photos: GPhoto[]; guests: Guest[]; isNew: boolean; guestUrl: string; adminUrl: string; maxGuestsLimit: number;
   pay: PayCfg; initialOrder: string | null;
+  free: { left: number; used: string[] };
 }) {
   const { t, lang } = useT();
   const router = useRouter();
@@ -38,6 +39,11 @@ export default function Dashboard({
   const [photos, setPhotos] = useState(initialPhotos);
   const [unlocked, setUnlocked] = useState(ev.downloadsUnlocked);
   const [sheet, setSheet] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const openSheet = (left?: number) => {
+    setNote(left === undefined ? null : left > 0 ? t.pay.freeTooMany.replaceAll("{n}", String(left)) : pay.freeDownloads > 0 ? t.pay.freeUsedUp.replace("{n}", String(pay.freeDownloads)) : null);
+    setSheet(true);
+  };
   useEffect(() => setUnlocked(ev.downloadsUnlocked), [ev.downloadsUnlocked]);
   useEffect(() => setPhotos(initialPhotos), [initialPhotos]);
 
@@ -151,7 +157,7 @@ export default function Dashboard({
                     <b>{t.pay.eventTitle}</b>
                     <span>{t.pay.lockedBanner}</span>
                   </div>
-                  <button className="btn btn-accent btn-small" onClick={() => setSheet(true)}>
+                  <button className="btn btn-accent btn-small" onClick={() => openSheet()}>
                     {t.pay.eventBtn} · {rupiah(pay.priceEvent)}
                   </button>
                 </div>
@@ -165,7 +171,9 @@ export default function Dashboard({
               onHide={onHide}
               onDelete={onDelete}
               locked={pay.enabled && !unlocked}
-              onLocked={() => setSheet(true)}
+              onLocked={openSheet}
+              freeLeft={free.left}
+              freeIds={free.used}
             />
           </>
         )}
@@ -175,6 +183,7 @@ export default function Dashboard({
             admin
             cfg={pay}
             open={sheet}
+            note={note}
             initialOrder={initialOrder}
             onClose={() => setSheet(false)}
             onUnlocked={() => { setUnlocked(true); setSheet(false); router.replace(`/kelola/${ev.slug}`); router.refresh(); }}

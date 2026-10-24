@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useT } from "./I18n";
 
-export type PayCfg = { enabled: boolean; clientKey: string; snapJs: string; priceEvent: number; pricePerson: number };
+export type PayCfg = { enabled: boolean; clientKey: string; snapJs: string; priceEvent: number; pricePerson: number; freeDownloads: number };
 
 type SnapResult = { order_id?: string; transaction_status?: string };
 type SnapApi = {
@@ -57,7 +57,7 @@ export function LockIcon({ size = 14 }: { size?: number }) {
  * per-person unlock. `initialOrder` resumes polling after a GoPay redirect.
  */
 export default function Paywall({
-  slug, admin, cfg, open, onClose, onUnlocked, initialOrder,
+  slug, admin, cfg, open, onClose, onUnlocked, initialOrder, note,
 }: {
   slug: string;
   admin: boolean;
@@ -66,6 +66,8 @@ export default function Paywall({
   onClose: () => void;
   onUnlocked: () => void;
   initialOrder?: string | null;
+  /** context shown at the top, e.g. why the sheet opened */
+  note?: string | null;
 }) {
   const { t } = useT();
   const p = t.pay;
@@ -179,6 +181,7 @@ export default function Paywall({
           </div>
         ) : (
           <>
+            {note && <p className="pw-note">{note}</p>}
             <div className="pw-head">
               <span className="pw-lock"><LockIcon size={18} /></span>
               <div>

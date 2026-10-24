@@ -3,7 +3,7 @@ import { one } from "@/lib/db";
 import { getEventBySlug, isRevealed } from "@/lib/events";
 import { currentGuest, isAdmin } from "@/lib/auth";
 import { readFile } from "@/lib/storage";
-import { canDownload } from "@/lib/payments";
+import { canDownload, claimFreeDownload } from "@/lib/payments";
 
 export const runtime = "nodejs";
 
@@ -27,7 +27,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string; 
     }
   }
   if (!allowed) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  if (!(await canDownload(ev))) return NextResponse.json({ error: "payment_required" }, { status: 402 });
+  if (!(await canDownload(ev)) && !(await claimFreeDownload(ev, id))) {
+    return NextResponse.json({ error: "payment_required" }, { status: 402 });
+  }
 
   const file = await readFile(photo.url);
   if (!file) return NextResponse.json({ error: "missing" }, { status: 404 });

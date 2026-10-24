@@ -27,6 +27,8 @@ export function Gallery({
   onDelete,
   locked = false,
   onLocked,
+  freeLeft = 0,
+  freeIds = [],
 }: {
   slug: string;
   eventName: string;
@@ -36,7 +38,11 @@ export function Gallery({
   onDelete?: (p: GPhoto) => void;
   /** downloads require payment; clicking a download calls onLocked instead */
   locked?: boolean;
-  onLocked?: () => void;
+  /** called with how many free downloads remain when a download needs payment */
+  onLocked?: (left: number) => void;
+  /** free downloads remaining for this visitor, and photos already downloaded for free */
+  freeLeft?: number;
+  freeIds?: string[];
 }) {
   const { t } = useT();
   const [who, setWho] = useState<string | null>(null);
@@ -44,6 +50,10 @@ export function Gallery({
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<number | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
+  const [left, setLeft] = useState(freeLeft);
+  const [freeSet, setFreeSet] = useState(() => new Set(freeIds));
+  useEffect(() => setLeft(freeLeft), [freeLeft]);
+  const lockedNow = locked && left === 0;
 
   const people = useMemo(() => {
     const m = new Map<string, { id: string; name: string; n: number }>();
@@ -69,12 +79,20 @@ export function Gallery({
   const zipName = `memoar-${slug}.zip`;
   const download = async (list: GPhoto[]) => {
     if (!list.length) return;
-    if (locked) { onLocked?.(); return; }
+    let need: GPhoto[] = [];
+    if (locked) {
+      need = list.filter((p) => !freeSet.has(p.id));
+      if (need.length > left) { onLocked?.(left); return; }
+    }
     setProgress(list.length > 1 ? `${t.admin.zipping} 0/${list.length}` : t.common.loading);
     try {
       await downloadPhotos(slug, list, zipName, (d, total) => setProgress(`${t.admin.zipping} ${d}/${total}`));
+      if (need.length) {
+        setFreeSet((s) => new Set([...s, ...need.map((p) => p.id)]));
+        setLeft((n) => Math.max(0, n - need.length));
+      }
     } catch (e) {
-      if ((e as Error).message === "payment_required") onLocked?.();
+      if ((e as Error).message === "payment_required") { setLeft(0); onLocked?.(0); }
       else alert(t.common.error);
     }
     setProgress(null);
@@ -117,6 +135,7 @@ export function Gallery({
       <div className="toolbar">
         <span className="small muted">
           {shown.length} {t.common.photos}
+          {locked && left > 0 && !progress && <> · <b>{t.pay.freeLeft.replace("{n}", String(left))}</b></>}
           {progress && <> · <b>{progress}</b></>}
         </span>
         <div className="row">
@@ -124,7 +143,7 @@ export function Gallery({
             <>
               <button className="btn btn-ghost btn-small" onClick={() => setSel(new Set(shown.map((p) => p.id)))}>{t.guest.selectAll}</button>
               <button className="btn btn-small btn-accent" disabled={!sel.size || !!progress} onClick={() => download(shown.filter((p) => sel.has(p.id)))}>
-                {locked && <LockIcon />} {t.guest.downloadSelected} ({sel.size})
+                {lockedNow && <LockIcon />} {t.guest.downloadSelected} ({sel.size})
               </button>
               <button className="btn btn-ghost btn-small" onClick={() => { setSelecting(false); setSel(new Set()); }}>{t.common.cancel}</button>
             </>
@@ -132,7 +151,7 @@ export function Gallery({
             <>
               <button className="btn btn-ghost btn-small" onClick={() => setSelecting(true)}>{t.guest.select}</button>
               <button className="btn btn-small" disabled={!!progress} onClick={() => download(shown.filter((p) => !p.hidden))}>
-                {locked && <LockIcon />} {t.admin.zip}
+                {locked && shown.filter((p) => !p.hidden && !freeSet.has(p.id)).length > left && <LockIcon />} {t.admin.zip}
               </button>
             </>
           )}
@@ -190,7 +209,7 @@ export function Gallery({
               {t.guest.by} <b style={{ color: "#fff" }}>{cur.guestName}</b>
             </span>
             <button className="btn btn-small btn-light" onClick={() => download([cur])}>
-              {locked && <LockIcon />} {t.common.download}
+              {locked && !freeSet.has(cur.id) && left === 0 && <LockIcon />} {t.common.download}
             </button>
           </div>
         </div>

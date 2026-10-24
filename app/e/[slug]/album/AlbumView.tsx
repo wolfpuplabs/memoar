@@ -9,16 +9,23 @@ import { expiresAt } from "@/lib/retention";
 
 export default function AlbumView({
   slug, eventName, revealAt, revealed, hostOnly, photos, totalPhotos, mine, isGuest,
-  pay, canDownload, initialOrder,
+  pay, canDownload, initialOrder, freeLeft, freeIds,
 }: {
   slug: string; eventName: string; revealAt: string; revealed: boolean; hostOnly: boolean;
   photos: GPhoto[]; totalPhotos: number; mine: number; isGuest: boolean;
   pay: PayCfg; canDownload: boolean; initialOrder: string | null;
+  freeLeft: number; freeIds: string[];
 }) {
   const { t } = useT();
   const router = useRouter();
   const [unlocked, setUnlocked] = useState(canDownload);
   const [sheet, setSheet] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const openSheet = (left?: number) => {
+    const n = String(pay.freeDownloads);
+    setNote(left === undefined ? null : left > 0 ? t.pay.freeTooMany.replaceAll("{n}", String(left)) : pay.freeDownloads > 0 ? t.pay.freeUsedUp.replace("{n}", n) : null);
+    setSheet(true);
+  };
   const locked = pay.enabled && !unlocked;
 
   if (!revealed && !photos.length) {
@@ -57,19 +64,20 @@ export default function AlbumView({
         </p>
       )}
       {locked && photos.length > 0 && (
-        <button type="button" className="unlock-strip" onClick={() => setSheet(true)}>
+        <button type="button" className="unlock-strip" onClick={() => openSheet()}>
           <span className="pw-lock"><LockIcon size={16} /></span>
-          <span className="us-text"><b>{t.pay.personTitle}</b><small>{t.pay.methods}</small></span>
+          <span className="us-text"><b>{t.pay.personTitle}</b><small>{pay.freeDownloads > 0 ? t.pay.freeHint.replace("{n}", String(pay.freeDownloads)) + " · " + t.pay.methods : t.pay.methods}</small></span>
           <span className="us-price">{rupiah(pay.pricePerson)}</span>
         </button>
       )}
-      <Gallery slug={slug} eventName={eventName} photos={photos} locked={locked} onLocked={() => setSheet(true)} />
+      <Gallery slug={slug} eventName={eventName} photos={photos} locked={locked} onLocked={openSheet} freeLeft={freeLeft} freeIds={freeIds} />
       {pay.enabled && (
         <Paywall
           slug={slug}
           admin={false}
           cfg={pay}
           open={sheet}
+          note={note}
           initialOrder={initialOrder}
           onClose={() => setSheet(false)}
           onUnlocked={() => { setUnlocked(true); setSheet(false); router.replace(`/e/${slug}/album`); }}

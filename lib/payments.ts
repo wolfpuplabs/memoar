@@ -34,13 +34,17 @@ export function payConfig() {
     snapJs: `${snapHost}/snap/snap.js`,
     priceEvent: int(process.env.PRICE_UNLOCK_EVENT, 49000),
     pricePerson: int(process.env.PRICE_UNLOCK_PERSON, 15000),
+    freeDownloads: (() => {
+      const n = Math.round(Number(process.env.FREE_DOWNLOADS_PER_PERSON ?? 10));
+      return Number.isFinite(n) && n >= 0 ? Math.min(n, 500) : 10;
+    })(),
   };
 }
 
 /** What the browser needs to show the paywall (no secrets). */
 export function publicPayConfig() {
   const c = payConfig();
-  return { enabled: c.enabled, clientKey: c.clientKey, snapJs: c.snapJs, priceEvent: c.priceEvent, pricePerson: c.pricePerson };
+  return { enabled: c.enabled, clientKey: c.clientKey, snapJs: c.snapJs, priceEvent: c.priceEvent, pricePerson: c.pricePerson, freeDownloads: c.freeDownloads };
 }
 export type PublicPayConfig = ReturnType<typeof publicPayConfig>;
 
@@ -197,4 +201,40 @@ export async function reconcilePending(ev: EventData, admin: boolean) {
     [ev.id, admin, h]
   );
   await Promise.all(rows.map((r) => refreshFromMidtrans(r.order_id).catch(() => null)));
+}
+
+/**
+ * Free quota: every visitor may download a few photos per album before paying.
+ * Tracked per photo, so downloading the same photo again never uses quota.
+ */
+export async function freeDownloadState(ev: EventData) {
+  const quota = payConfig().freeDownloads;
+  const h = await buyerHash(ev, false);
+  if (!h || quota === 0) return { quota, used: [] as string[], left: quota };
+  const rows = await query<{ photo_id: string }>(
+    `select photo_id from free_downloads where event_id = $1 and buyer_hash = $2`,
+    [ev.id, h]
+  );
+  const used = rows.map((r) => r.photo_id);
+  return { quota, used, left: Math.max(0, quota - used.length) };
+}
+
+/** Records a free download of one photo if quota remains. Returns true when allowed. */
+export async function claimFreeDownload(ev: EventData, photoId: string) {
+  const quota = payConfig().freeDownloads;
+  if (quota === 0) return false;
+  const h = await buyerHash(ev, true);
+  if (!h) return false;
+  await query(
+    `insert into free_downloads (event_id, buyer_hash, photo_id)
+     select $1, $2, $3
+      where (select count(*) from free_downloads where event_id = $1 and buyer_hash = $2) < $4
+     on conflict do nothing`,
+    [ev.id, h, photoId, quota]
+  );
+  const ok = await one(
+    `select 1 as x from free_downloads where event_id = $1 and buyer_hash = $2 and photo_id = $3`,
+    [ev.id, h, photoId]
+  );
+  return !!ok;
 }

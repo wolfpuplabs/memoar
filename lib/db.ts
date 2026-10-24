@@ -69,6 +69,13 @@ const SCHEMA = [
     paid_at timestamptz
   )`,
   `create index if not exists payments_buyer_idx on payments(event_id, buyer_hash)`,
+  `create table if not exists free_downloads (
+    event_id text not null references events(id) on delete cascade,
+    buyer_hash text not null,
+    photo_id text not null,
+    created_at timestamptz not null default now(),
+    primary key (event_id, buyer_hash, photo_id)
+  )`,
 ];
 
 let runnerPromise: Promise<Runner> | null = null;
