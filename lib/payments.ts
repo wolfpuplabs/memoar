@@ -26,7 +26,10 @@ export function payConfig() {
     return Number.isFinite(n) && n >= 1000 ? n : d;
   };
   return {
-    enabled: !!serverKey && !!clientKey,
+    // Fail closed: in production a missing key keeps the paywall up (payments then
+    // error out) instead of silently making every download free.
+    enabled: (!!serverKey && !!clientKey) || isProduction,
+    misconfigured: isProduction && (!serverKey || !clientKey),
     serverKey,
     clientKey,
     isProduction,
@@ -88,6 +91,10 @@ export async function canDownload(ev: EventData) {
 const auth = (serverKey: string) => "Basic " + Buffer.from(`${serverKey}:`).toString("base64");
 
 export async function createPayment(ev: EventData, scope: Scope, origin: string, returnPath: string) {
+  if (payConfig().misconfigured) {
+    console.error("payments: MIDTRANS_IS_PRODUCTION=true but MIDTRANS_SERVER_KEY / MIDTRANS_CLIENT_KEY is missing");
+    throw new Error("payments_misconfigured");
+  }
   const c = payConfig();
   const amount = scope === "event" ? ev.packagePrice : c.pricePerson;
   const h = scope === "person" ? await buyerHash(ev, true) : null;
