@@ -4,7 +4,7 @@ import { getEventBySlug, listGuests, listPhotos, MAX_GUESTS_LIMIT } from "@/lib/
 import { adminToken } from "@/lib/auth";
 import { getT, siteOrigin } from "@/lib/i18n-server";
 import Dashboard from "./Dashboard";
-import { publicPayConfig } from "@/lib/payments";
+import { publicPayConfig, reconcilePending } from "@/lib/payments";
 
 export const metadata: Metadata = { title: "Manage event", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -19,8 +19,12 @@ export default async function ManagePage({
   const { slug } = await params;
   const { baru, order } = await searchParams;
   const { t } = await getT();
-  const ev = await getEventBySlug(slug);
+  let ev = await getEventBySlug(slug);
   const token = ev ? await adminToken(ev) : null;
+  if (ev && token) {
+    await reconcilePending(ev, true).catch(() => null);
+    ev = (await getEventBySlug(slug)) ?? ev;
+  }
 
   if (!ev || !token) {
     return (

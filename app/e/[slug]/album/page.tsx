@@ -6,7 +6,8 @@ import { currentGuest, isAdmin } from "@/lib/auth";
 import { getT } from "@/lib/i18n-server";
 import { LangToggle, Logo } from "@/components/ui";
 import AlbumView from "./AlbumView";
-import { canDownload, publicPayConfig } from "@/lib/payments";
+import { canDownload, publicPayConfig, reconcilePending } from "@/lib/payments";
+import { getEventBySlug as reloadEvent } from "@/lib/events";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Album", robots: { index: false } };
@@ -29,7 +30,8 @@ export default async function AlbumPage({
   const photos = canSee ? await listPhotos(ev.id) : [];
   const mine = guest ? await guestShotCount(guest.id) : 0;
   const pay = publicPayConfig();
-  const allowed = await canDownload(ev);
+  await reconcilePending(ev, admin).catch(() => null);
+  const allowed = await canDownload((await reloadEvent(ev.slug)) ?? ev);
 
   return (
     <div className="album-page">

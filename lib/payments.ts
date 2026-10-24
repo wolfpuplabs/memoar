@@ -180,3 +180,21 @@ export async function getPayment(orderId: string, eventId: string) {
     [orderId, eventId]
   );
 }
+
+/**
+ * Before rendering the album or dashboard: re-check this visitor's recent
+ * pending payments with Midtrans, so a page reload unlocks downloads even if
+ * the webhook never arrived and the payment tab was closed.
+ */
+export async function reconcilePending(ev: EventData, admin: boolean) {
+  if (!payConfig().enabled || ev.downloadsUnlocked) return;
+  const h = await buyerHash(ev, false);
+  const rows = await query<{ order_id: string }>(
+    `select order_id from payments
+      where event_id = $1 and status = 'pending' and created_at > now() - interval '6 hours'
+        and ((scope = 'event' and $2::boolean) or (scope = 'person' and buyer_hash = $3))
+      order by created_at desc limit 3`,
+    [ev.id, admin, h]
+  );
+  await Promise.all(rows.map((r) => refreshFromMidtrans(r.order_id).catch(() => null)));
+}
