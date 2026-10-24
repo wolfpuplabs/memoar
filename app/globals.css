@@ -888,3 +888,34 @@ textarea { resize: vertical; min-height: 84px; }
 .look-grid .choice b { font-size: 14px; }
 .look-grid .choice span { font-size: 11.5px; }
 @media (max-width: 480px) { .look-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; } .look-grid .choice span { display: none; } }
+
+/* download frames */
+.frame-pick { display: flex; align-items: center; gap: 6px; margin: 0 0 12px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.frame-pick::-webkit-scrollbar { display: none; }
+.fp-opt { flex-shrink: 0; white-space: nowrap; }
+.frame-pick > span { margin-right: 4px; }
+.fp-opt { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 12px 0 8px; border-radius: 999px; border: 1px solid var(--stroke); background: var(--glass); color: var(--ink-2); font-size: 13px; font-weight: 600; cursor: pointer; }
+.fp-opt.on { background: #f5f5f7; color: #0a0a0c; border-color: transparent; }
+.fp-ico { width: 18px; height: 22px; border-radius: 3px; display: inline-block; position: relative; background: linear-gradient(160deg, #8a8a92, #3a3a40); }
+.fp-ico.fp-none { border: 1.5px dashed currentColor; background: none; opacity: .6; }
+.fp-ico.fp-polaroid { background: #f3f2ee; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
+.fp-ico.fp-polaroid::after { content: ""; position: absolute; left: 2px; right: 2px; top: 2px; height: 13px; background: linear-gradient(160deg, #8a8a92, #3a3a40); }
+.fp-ico.fp-film { background: #111; box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
+.fp-ico.fp-film::after { content: ""; position: absolute; left: 2px; right: 2px; top: 5px; bottom: 5px; background: linear-gradient(160deg, #8a8a92, #3a3a40); }
+.fp-ico.fp-postcard { background: #efe9dd; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
+.fp-ico.fp-postcard::after { content: ""; position: absolute; left: 3px; right: 3px; top: 3px; height: 11px; background: linear-gradient(160deg, #8a8a92, #3a3a40); }
+.lb-frame { margin: 0; display: grid; justify-items: center; max-height: 100%; box-shadow: 0 40px 80px -30px rgba(0,0,0,.9); border-radius: 4px; }
+.lightbox .lb-img .lb-frame img { border-radius: 0; box-shadow: none; max-height: calc(100dvh - 300px); }
+.lb-frame figcaption { display: grid; justify-items: center; gap: 4px; text-align: center; padding: 14px 8px 6px; }
+.fr-polaroid { background: linear-gradient(#f8f7f3, #ecebe5); padding: 14px 14px 10px; }
+.fr-polaroid figcaption b { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 26px; color: #26262b; line-height: 1; }
+.fr-polaroid figcaption small { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: rgba(38,38,43,.5); }
+.fr-postcard { background: #f1ece2; padding: 22px 22px 12px; }
+.fr-postcard img { outline: 1px solid #cfc6b4; outline-offset: 9px; }
+.fr-postcard figcaption { padding-top: 22px; }
+.fr-postcard figcaption b { font-family: var(--serif); font-weight: 400; font-size: 26px; color: #1d1d20; line-height: 1; }
+.fr-postcard figcaption small { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: rgba(29,29,32,.55); }
+.fr-film { background: #0c0b0a; padding: 30px 10px; position: relative; }
+.fr-film::before, .fr-film::after { content: ""; position: absolute; left: 6px; right: 6px; height: 12px; background: repeating-linear-gradient(90deg, #d9d4c8 0 9px, transparent 9px 20px); border-radius: 2px; }
+.fr-film::before { top: 8px; } .fr-film::after { bottom: 8px; }
+.fr-film img { border-radius: 3px !important; }

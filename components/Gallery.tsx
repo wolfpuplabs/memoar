@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useT } from "./I18n";
 import { downloadPhotos } from "@/lib/image-client";
+import { FRAMES, type FrameId } from "@/lib/frames";
 import { LockIcon } from "./Paywall";
 
 export type GPhoto = {
@@ -44,8 +45,20 @@ export function Gallery({
   freeLeft?: number;
   freeIds?: string[];
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [who, setWho] = useState<string | null>(null);
+  const [frame, setFrameState] = useState<FrameId>("none");
+  useEffect(() => {
+    try {
+      const f = localStorage.getItem("memoar-frame") as FrameId | null;
+      if (f && FRAMES.some((x) => x.id === f)) setFrameState(f);
+    } catch { /* storage unavailable */ }
+  }, []);
+  const setFrame = (f: FrameId) => {
+    setFrameState(f);
+    try { localStorage.setItem("memoar-frame", f); } catch { /* ignore */ }
+  };
+  const frameNo = useMemo(() => new Map(photos.map((p, i) => [p.id, i])), [photos]);
   const [selecting, setSelecting] = useState(false);
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<number | null>(null);
@@ -86,7 +99,13 @@ export function Gallery({
     }
     setProgress(list.length > 1 ? `${t.admin.zipping} 0/${list.length}` : t.common.loading);
     try {
-      await downloadPhotos(slug, list, zipName, (d, total) => setProgress(`${t.admin.zipping} ${d}/${total}`));
+      await downloadPhotos(
+        slug,
+        list.map((p) => ({ ...p, frameNo: frameNo.get(p.id) })),
+        zipName,
+        (d, total) => setProgress(`${t.admin.zipping} ${d}/${total}`),
+        { frame, eventName }
+      );
       if (need.length) {
         setFreeSet((s) => new Set([...s, ...need.map((p) => p.id)]));
         setLeft((n) => Math.max(0, n - need.length));
@@ -132,6 +151,22 @@ export function Gallery({
           ))}
         </div>
       )}
+      <div className="frame-pick" role="radiogroup" aria-label={t.guest.frame}>
+        <span className="small muted">{t.guest.frame}</span>
+        {FRAMES.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            role="radio"
+            aria-checked={frame === f.id}
+            className={`fp-opt ${frame === f.id ? "on" : ""}`}
+            onClick={() => setFrame(f.id)}
+          >
+            <i className={`fp-ico fp-${f.id}`} aria-hidden="true" />
+            {f.name[lang]}
+          </button>
+        ))}
+      </div>
       <div className="toolbar">
         <span className="small muted">
           {shown.length} {t.common.photos}
@@ -200,7 +235,19 @@ export function Gallery({
             </div>
           </div>
           <div className="lb-img" onClick={(e) => e.target === e.currentTarget && close()}>
-            <img src={cur.url} alt="" />
+            {frame === "none" ? (
+              <img src={cur.url} alt="" />
+            ) : (
+              <figure className={`lb-frame fr-${frame}`}>
+                <img src={cur.url} alt="" />
+                {frame !== "film" && (
+                  <figcaption>
+                    <b>{frame === "polaroid" ? cur.guestName || eventName : eventName}</b>
+                    <small>{frame === "polaroid" ? (cur.guestName ? eventName : "") : cur.guestName ? `by ${cur.guestName}` : ""}</small>
+                  </figcaption>
+                )}
+              </figure>
+            )}
             {open! > 0 && <button className="lb-nav lb-prev" onClick={() => setOpen(open! - 1)} aria-label="prev">‹</button>}
             {open! < shown.length - 1 && <button className="lb-nav lb-next" onClick={() => setOpen(open! + 1)} aria-label="next">›</button>}
           </div>

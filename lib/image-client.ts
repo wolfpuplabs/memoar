@@ -1,5 +1,6 @@
 "use client";
 import { applyLook, drawDateStamp, getLook } from "./filters";
+import { applyFrame, type FrameId } from "./frames";
 
 export type Processed = { full: Blob; thumb: Blob; width: number; height: number };
 
@@ -98,15 +99,25 @@ export async function saveBlob(blob: Blob, filename: string) {
 
 export async function downloadPhotos(
   slug: string,
-  photos: { id: string; guestName: string | null }[],
+  photos: { id: string; guestName: string | null; createdAt?: string; frameNo?: number }[],
   zipName: string,
-  onProgress?: (done: number, total: number) => void
+  onProgress?: (done: number, total: number) => void,
+  framing?: { frame: FrameId; eventName: string }
 ) {
+  const order = new Map(photos.map((p, i) => [p.id, i]));
   const fetchOne = async (id: string) => {
     const r = await fetch(`/api/e/${slug}/photos/${id}/file`);
     if (r.status === 402) throw new Error("payment_required");
     if (!r.ok) throw new Error("download");
-    return r.blob();
+    const blob = await r.blob();
+    if (!framing || framing.frame === "none") return blob;
+    const p = photos[order.get(id) ?? 0];
+    return applyFrame(blob, framing.frame, {
+      event: framing.eventName,
+      guest: p.guestName,
+      date: p.createdAt ? new Date(p.createdAt) : new Date(),
+      index: p.frameNo ?? order.get(id) ?? 0,
+    });
   };
   const name = (p: { id: string; guestName: string | null }, i: number) => {
     const who = (p.guestName || "guest").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "guest";
