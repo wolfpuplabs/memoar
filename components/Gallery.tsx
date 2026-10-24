@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useT } from "./I18n";
 import { downloadPhotos } from "@/lib/image-client";
+import { LockIcon } from "./Paywall";
 
 export type GPhoto = {
   id: string;
@@ -24,6 +25,8 @@ export function Gallery({
   admin = false,
   onHide,
   onDelete,
+  locked = false,
+  onLocked,
 }: {
   slug: string;
   eventName: string;
@@ -31,6 +34,9 @@ export function Gallery({
   admin?: boolean;
   onHide?: (p: GPhoto) => void;
   onDelete?: (p: GPhoto) => void;
+  /** downloads require payment; clicking a download calls onLocked instead */
+  locked?: boolean;
+  onLocked?: () => void;
 }) {
   const { t } = useT();
   const [who, setWho] = useState<string | null>(null);
@@ -63,11 +69,13 @@ export function Gallery({
   const zipName = `memoar-${slug}.zip`;
   const download = async (list: GPhoto[]) => {
     if (!list.length) return;
+    if (locked) { onLocked?.(); return; }
     setProgress(list.length > 1 ? `${t.admin.zipping} 0/${list.length}` : t.common.loading);
     try {
       await downloadPhotos(slug, list, zipName, (d, total) => setProgress(`${t.admin.zipping} ${d}/${total}`));
-    } catch {
-      alert(t.common.error);
+    } catch (e) {
+      if ((e as Error).message === "payment_required") onLocked?.();
+      else alert(t.common.error);
     }
     setProgress(null);
   };
@@ -116,7 +124,7 @@ export function Gallery({
             <>
               <button className="btn btn-ghost btn-small" onClick={() => setSel(new Set(shown.map((p) => p.id)))}>{t.guest.selectAll}</button>
               <button className="btn btn-small btn-accent" disabled={!sel.size || !!progress} onClick={() => download(shown.filter((p) => sel.has(p.id)))}>
-                {t.guest.downloadSelected} ({sel.size})
+                {locked && <LockIcon />} {t.guest.downloadSelected} ({sel.size})
               </button>
               <button className="btn btn-ghost btn-small" onClick={() => { setSelecting(false); setSel(new Set()); }}>{t.common.cancel}</button>
             </>
@@ -124,7 +132,7 @@ export function Gallery({
             <>
               <button className="btn btn-ghost btn-small" onClick={() => setSelecting(true)}>{t.guest.select}</button>
               <button className="btn btn-small" disabled={!!progress} onClick={() => download(shown.filter((p) => !p.hidden))}>
-                {t.admin.zip}
+                {locked && <LockIcon />} {t.admin.zip}
               </button>
             </>
           )}
@@ -182,7 +190,7 @@ export function Gallery({
               {t.guest.by} <b style={{ color: "#fff" }}>{cur.guestName}</b>
             </span>
             <button className="btn btn-small btn-light" onClick={() => download([cur])}>
-              {t.common.download}
+              {locked && <LockIcon />} {t.common.download}
             </button>
           </div>
         </div>

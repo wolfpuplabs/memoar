@@ -6,12 +6,20 @@ import { currentGuest, isAdmin } from "@/lib/auth";
 import { getT } from "@/lib/i18n-server";
 import { LangToggle, Logo } from "@/components/ui";
 import AlbumView from "./AlbumView";
+import { canDownload, publicPayConfig } from "@/lib/payments";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Album", robots: { index: false } };
 
-export default async function AlbumPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function AlbumPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ order?: string }>;
+}) {
   const { slug } = await params;
+  const { order } = await searchParams;
   const ev = await getEventBySlug(slug);
   if (!ev) redirect(`/e/${slug}`);
   const { t } = await getT();
@@ -20,6 +28,8 @@ export default async function AlbumPage({ params }: { params: Promise<{ slug: st
   const canSee = admin || (revealed && ev.visibility === "everyone");
   const photos = canSee ? await listPhotos(ev.id) : [];
   const mine = guest ? await guestShotCount(guest.id) : 0;
+  const pay = publicPayConfig();
+  const allowed = await canDownload(ev);
 
   return (
     <div className="album-page">
@@ -49,6 +59,9 @@ export default async function AlbumPage({ params }: { params: Promise<{ slug: st
           totalPhotos={stats.photos}
           mine={mine}
           isGuest={!!guest}
+          pay={pay}
+          canDownload={allowed}
+          initialOrder={order && /^[A-Z0-9-]{6,60}$/.test(order) ? order : null}
         />
       </div>
     </div>

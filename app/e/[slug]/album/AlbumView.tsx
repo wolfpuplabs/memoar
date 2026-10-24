@@ -1,5 +1,7 @@
 "use client";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Paywall, { LockIcon, rupiah, type PayCfg } from "@/components/Paywall";
 import { useT } from "@/components/I18n";
 import { Countdown, LocalTime } from "@/components/ui";
 import { Gallery, type GPhoto } from "@/components/Gallery";
@@ -7,12 +9,17 @@ import { expiresAt } from "@/lib/retention";
 
 export default function AlbumView({
   slug, eventName, revealAt, revealed, hostOnly, photos, totalPhotos, mine, isGuest,
+  pay, canDownload, initialOrder,
 }: {
   slug: string; eventName: string; revealAt: string; revealed: boolean; hostOnly: boolean;
   photos: GPhoto[]; totalPhotos: number; mine: number; isGuest: boolean;
+  pay: PayCfg; canDownload: boolean; initialOrder: string | null;
 }) {
   const { t } = useT();
   const router = useRouter();
+  const [unlocked, setUnlocked] = useState(canDownload);
+  const [sheet, setSheet] = useState(false);
+  const locked = pay.enabled && !unlocked;
 
   if (!revealed && !photos.length) {
     return (
@@ -49,7 +56,25 @@ export default function AlbumView({
           ⏳ {t.guest.expiresOn} <b><LocalTime iso={expiresAt({ revealAt })} mode="date" /></b>
         </p>
       )}
-      <Gallery slug={slug} eventName={eventName} photos={photos} />
+      {locked && photos.length > 0 && (
+        <button type="button" className="unlock-strip" onClick={() => setSheet(true)}>
+          <span className="pw-lock"><LockIcon size={16} /></span>
+          <span className="us-text"><b>{t.pay.personTitle}</b><small>{t.pay.methods}</small></span>
+          <span className="us-price">{rupiah(pay.pricePerson)}</span>
+        </button>
+      )}
+      <Gallery slug={slug} eventName={eventName} photos={photos} locked={locked} onLocked={() => setSheet(true)} />
+      {pay.enabled && (
+        <Paywall
+          slug={slug}
+          admin={false}
+          cfg={pay}
+          open={sheet}
+          initialOrder={initialOrder}
+          onClose={() => setSheet(false)}
+          onUnlocked={() => { setUnlocked(true); setSheet(false); router.replace(`/e/${slug}/album`); }}
+        />
+      )}
     </>
   );
 }

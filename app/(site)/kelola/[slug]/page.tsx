@@ -4,6 +4,7 @@ import { getEventBySlug, listGuests, listPhotos, MAX_GUESTS_LIMIT } from "@/lib/
 import { adminToken } from "@/lib/auth";
 import { getT, siteOrigin } from "@/lib/i18n-server";
 import Dashboard from "./Dashboard";
+import { publicPayConfig } from "@/lib/payments";
 
 export const metadata: Metadata = { title: "Manage event", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -13,10 +14,10 @@ export default async function ManagePage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ baru?: string }>;
+  searchParams: Promise<{ baru?: string; order?: string }>;
 }) {
   const { slug } = await params;
-  const { baru } = await searchParams;
+  const { baru, order } = await searchParams;
   const { t } = await getT();
   const ev = await getEventBySlug(slug);
   const token = ev ? await adminToken(ev) : null;
@@ -44,6 +45,8 @@ export default async function ManagePage({
       guestUrl={`${origin}/e/${ev.slug}`}
       adminUrl={`${origin}/k/${ev.slug}/${token}`}
       maxGuestsLimit={MAX_GUESTS_LIMIT}
+      pay={publicPayConfig()}
+      initialOrder={order && /^[A-Z0-9-]{6,60}$/.test(order) ? order : null}
     />
   );
 }

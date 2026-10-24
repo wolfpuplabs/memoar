@@ -42,6 +42,7 @@ export type EventData = {
   allowUploads: boolean;
   coverUrl: string | null;
   coverPathname: string | null;
+  downloadsUnlocked: boolean;
   createdAt: string;
 };
 
@@ -84,6 +85,7 @@ export function mapEvent(r: any): EventData {
     allowUploads: !!r.allow_uploads,
     coverUrl: r.cover_url,
     coverPathname: r.cover_pathname,
+    downloadsUnlocked: !!r.downloads_unlocked,
     createdAt: iso(r.created_at),
   };
 }

@@ -13,6 +13,20 @@ Kamera sekali pakai digital untuk acara. Host membuat acara, tamu memindai QR da
 - **Dashboard host** — statistik, daftar tamu, sembunyikan/hapus foto, ubah pengaturan, ganti sampul, hapus acara.
 - **Dua bahasa** — Indonesia & English.
 
+## Pembayaran download (Midtrans)
+
+Album bisa dilihat gratis; download resolusi penuh dibayar lewat Midtrans Snap (QRIS & GoPay):
+
+- **Host** membuka download untuk semua orang (`PRICE_UNLOCK_EVENT`, default Rp 49.000).
+- **Tamu/pengunjung** bisa membuka download untuk dirinya sendiri (`PRICE_UNLOCK_PERSON`, default Rp 15.000).
+
+Setup:
+1. Isi `MIDTRANS_SERVER_KEY` dan `MIDTRANS_CLIENT_KEY` di Vercel (Sandbox dulu), lalu redeploy.
+2. Di dashboard Midtrans → Settings → Payment → Notification URL, isi `https://<domain>/api/midtrans/notify`.
+3. Setelah diuji, ganti ke key Production dan set `MIDTRANS_IS_PRODUCTION=true`.
+
+Tanpa key, paywall nonaktif dan download gratis. Status juga dicek langsung ke Midtrans selama halaman menunggu, jadi tetap jalan walau webhook terlambat.
+
 ## Stack
 
 Next.js 16 (App Router) · Neon Postgres · Vercel Blob · tanpa framework CSS.

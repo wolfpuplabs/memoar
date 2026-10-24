@@ -54,6 +54,20 @@ const SCHEMA = [
   )`,
   `create index if not exists photos_event_idx on photos(event_id, created_at)`,
   `create index if not exists photos_guest_idx on photos(guest_id)`,
+  `alter table events add column if not exists downloads_unlocked boolean not null default false`,
+  `create table if not exists payments (
+    order_id text primary key,
+    event_id text not null references events(id) on delete cascade,
+    scope text not null,
+    buyer_hash text,
+    amount integer not null,
+    status text not null default 'pending',
+    payment_type text,
+    snap_token text,
+    created_at timestamptz not null default now(),
+    paid_at timestamptz
+  )`,
+  `create index if not exists payments_buyer_idx on payments(event_id, buyer_hash)`,
 ];
 
 let runnerPromise: Promise<Runner> | null = null;

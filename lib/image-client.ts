@@ -100,6 +100,7 @@ export async function downloadPhotos(
 ) {
   const fetchOne = async (id: string) => {
     const r = await fetch(`/api/e/${slug}/photos/${id}/file`);
+    if (r.status === 402) throw new Error("payment_required");
     if (!r.ok) throw new Error("download");
     return r.blob();
   };

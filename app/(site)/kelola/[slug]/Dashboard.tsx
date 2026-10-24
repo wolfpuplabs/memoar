@@ -10,12 +10,13 @@ import { Gallery, colorFor, type GPhoto } from "@/components/Gallery";
 import { LOOKS } from "@/lib/filters";
 import { expiresAt } from "@/lib/retention";
 import { prepareCover, saveBlob } from "@/lib/image-client";
+import Paywall, { LockIcon, rupiah, type PayCfg } from "@/components/Paywall";
 
 type Ev = {
   id: string; slug: string; name: string; kind: string; hostName: string | null; message: string | null;
   startsAt: string; endsAt: string; revealMode: string; revealDelayHours: number; revealAt: string;
   filter: string; dateStamp: boolean; shotsPerGuest: number; maxGuests: number; visibility: string;
-  allowUploads: boolean; coverUrl: string | null;
+  allowUploads: boolean; coverUrl: string | null; downloadsUnlocked: boolean;
 };
 type Guest = { id: string; name: string; createdAt: string; shots: number };
 
@@ -26,14 +27,18 @@ const toLocalInput = (iso: string) => {
 };
 
 export default function Dashboard({
-  ev, photos: initialPhotos, guests, isNew, guestUrl, adminUrl, maxGuestsLimit,
+  ev, photos: initialPhotos, guests, isNew, guestUrl, adminUrl, maxGuestsLimit, pay, initialOrder,
 }: {
   ev: Ev; photos: GPhoto[]; guests: Guest[]; isNew: boolean; guestUrl: string; adminUrl: string; maxGuestsLimit: number;
+  pay: PayCfg; initialOrder: string | null;
 }) {
   const { t, lang } = useT();
   const router = useRouter();
   const [tab, setTab] = useState<"album" | "share" | "guests" | "settings">(isNew ? "share" : "album");
   const [photos, setPhotos] = useState(initialPhotos);
+  const [unlocked, setUnlocked] = useState(ev.downloadsUnlocked);
+  const [sheet, setSheet] = useState(false);
+  useEffect(() => setUnlocked(ev.downloadsUnlocked), [ev.downloadsUnlocked]);
   useEffect(() => setPhotos(initialPhotos), [initialPhotos]);
 
   const [now, setNow] = useState<number | null>(null);
@@ -135,7 +140,45 @@ export default function Dashboard({
         </div>
 
         {tab === "album" && (
-          <Gallery slug={ev.slug} eventName={ev.name} photos={photos} admin onHide={onHide} onDelete={onDelete} />
+          <>
+            {pay.enabled && (
+              unlocked ? (
+                <div className="unlock-done">✓ {t.pay.unlockedAll}</div>
+              ) : (
+                <div className="card unlock-card">
+                  <span className="pw-lock"><LockIcon size={18} /></span>
+                  <div className="uc-text">
+                    <b>{t.pay.eventTitle}</b>
+                    <span>{t.pay.lockedBanner}</span>
+                  </div>
+                  <button className="btn btn-accent btn-small" onClick={() => setSheet(true)}>
+                    {t.pay.eventBtn} · {rupiah(pay.priceEvent)}
+                  </button>
+                </div>
+              )
+            )}
+            <Gallery
+              slug={ev.slug}
+              eventName={ev.name}
+              photos={photos}
+              admin
+              onHide={onHide}
+              onDelete={onDelete}
+              locked={pay.enabled && !unlocked}
+              onLocked={() => setSheet(true)}
+            />
+          </>
+        )}
+        {pay.enabled && (
+          <Paywall
+            slug={ev.slug}
+            admin
+            cfg={pay}
+            open={sheet}
+            initialOrder={initialOrder}
+            onClose={() => setSheet(false)}
+            onUnlocked={() => { setUnlocked(true); setSheet(false); router.replace(`/kelola/${ev.slug}`); router.refresh(); }}
+          />
         )}
         {tab === "share" && <Share ev={ev} guestUrl={guestUrl} adminUrl={adminUrl} />}
         {tab === "guests" && (
