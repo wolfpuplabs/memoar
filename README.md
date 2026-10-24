@@ -19,7 +19,7 @@ Album bisa dilihat gratis; download resolusi penuh dibayar lewat Midtrans Snap (
 
 - **Host** membuka download untuk semua orang (`PRICE_UNLOCK_EVENT`, default Rp 49.000).
 - **Tamu/pengunjung** bisa membuka download untuk dirinya sendiri (`PRICE_UNLOCK_PERSON`, default Rp 15.000).
-- **Gratis:** album pertama dari setiap perangkat host gratis penuh, dan di album lain setiap orang bisa download 10 foto pertama gratis (`FREE_DOWNLOADS_PER_PERSON`).
+- **Gratis:** album pertama dari setiap perangkat host gratis penuh, dan di album lain setiap orang bisa download 3 foto pertama gratis (`FREE_DOWNLOADS_PER_PERSON`).
 
 Setup:
 1. Isi `MIDTRANS_SERVER_KEY` dan `MIDTRANS_CLIENT_KEY` di Vercel (Sandbox dulu), lalu redeploy.

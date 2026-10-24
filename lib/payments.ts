@@ -35,7 +35,7 @@ export function payConfig() {
     priceEvent: int(process.env.PRICE_UNLOCK_EVENT, 49000),
     pricePerson: int(process.env.PRICE_UNLOCK_PERSON, 15000),
     freeDownloads: (() => {
-      const n = Math.round(Number(process.env.FREE_DOWNLOADS_PER_PERSON ?? 10));
+      const n = Math.round(Number(process.env.FREE_DOWNLOADS_PER_PERSON ?? 3));
       return Number.isFinite(n) && n >= 0 ? Math.min(n, 500) : 10;
     })(),
   };
