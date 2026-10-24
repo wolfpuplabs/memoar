@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getEventBySlug } from "@/lib/events";
 import { isAdmin } from "@/lib/auth";
+import { limitByClient } from "@/lib/guard";
 import { siteOrigin } from "@/lib/i18n-server";
 import { canDownload, createPayment, getPayment, payConfig, refreshFromMidtrans, type Scope } from "@/lib/payments";
 
@@ -14,6 +15,8 @@ export async function POST(req: Request, ctx: Ctx) {
   if (!ev) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (!payConfig().enabled) return NextResponse.json({ unlocked: true });
   if (ev.downloadsUnlocked) return NextResponse.json({ unlocked: true });
+  const limited = await limitByClient(req, "pay", 15, 600);
+  if (limited) return limited;
 
   const { scope } = (await req.json().catch(() => ({}))) as { scope?: Scope };
   const admin = await isAdmin(ev);
@@ -35,6 +38,8 @@ export async function GET(req: Request, ctx: Ctx) {
   const { slug } = await ctx.params;
   const ev = await getEventBySlug(slug);
   if (!ev) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const limited = await limitByClient(req, "pay-poll", 200, 600);
+  if (limited) return limited;
   const orderId = new URL(req.url).searchParams.get("order") || "";
   let pay = orderId ? await getPayment(orderId, ev.id) : null;
   if (pay && pay.status === "pending" && payConfig().enabled) {

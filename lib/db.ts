@@ -78,6 +78,26 @@ const SCHEMA = [
     created_at timestamptz not null default now(),
     primary key (event_id, buyer_hash, photo_id)
   )`,
+  `create table if not exists rate_limits (
+    k text not null,
+    bucket bigint not null,
+    n integer not null default 1,
+    expires_at timestamptz not null,
+    primary key (k, bucket)
+  )`,
+  `create table if not exists metrics (
+    id bigserial primary key,
+    name text not null,
+    ref text,
+    amount integer not null default 0,
+    bytes bigint not null default 0,
+    at timestamptz not null default now()
+  )`,
+  `create index if not exists metrics_name_at_idx on metrics(name, at)`,
+  // reserved exposures per guest: an atomic counter keeps parallel uploads within the roll
+  `alter table guests add column if not exists shots integer`,
+  `update guests g set shots = (select count(*) from photos p where p.guest_id = g.id) where shots is null`,
+  `alter table guests alter column shots set default 0`,
 ];
 
 let runnerPromise: Promise<Runner> | null = null;

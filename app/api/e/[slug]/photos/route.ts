@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { one, query } from "@/lib/db";
-import { getEventBySlug, guestShotCount, isOpen, isRevealed, listPhotos, previewOnly } from "@/lib/events";
+import { getEventBySlug, isOpen, isRevealed, listPhotos, previewOnly } from "@/lib/events";
 import { canDownload } from "@/lib/payments";
 import { currentGuest, isAdmin } from "@/lib/auth";
 import { randomId } from "@/lib/ids";
-import { saveFile, deleteFiles } from "@/lib/storage";
+import { deleteFiles, saveFile } from "@/lib/storage";
+import { isJpeg, limitByClient, track } from "@/lib/guard";
 
 export const runtime = "nodejs";
 type Ctx = { params: Promise<{ slug: string }> };
@@ -30,41 +31,56 @@ export async function POST(req: Request, ctx: Ctx) {
     return NextResponse.json({ error: "file" }, { status: 400 });
   }
   if (full.size > MAX_FULL || thumb.size > MAX_THUMB) return NextResponse.json({ error: "too_big" }, { status: 413 });
+  if (!(await isJpeg(full)) || !(await isJpeg(thumb))) return NextResponse.json({ error: "file" }, { status: 415 });
+  const limited = await limitByClient(req, "upload", 240, 600);
+  if (limited) return limited;
 
-  const used = await guestShotCount(guest.id);
-  if (used >= ev.shotsPerGuest) return NextResponse.json({ error: "roll_done", used }, { status: 403 });
+  // Reserve the exposure first: the row lock makes parallel uploads queue up,
+  // so a guest can never go past the roll.
+  const reserved = await one<{ shots: number }>(
+    `update guests set shots = coalesce(shots, 0) + 1 where id = $1 and coalesce(shots, 0) < $2 returning shots`,
+    [guest.id, ev.shotsPerGuest],
+  );
+  if (!reserved) return NextResponse.json({ error: "roll_done", used: ev.shotsPerGuest }, { status: 403 });
+  const release = () => query(`update guests set shots = greatest(coalesce(shots, 1) - 1, 0) where id = $1`, [guest.id]);
 
   const folder = `events/${ev.id}`;
-  const [f, t] = await Promise.all([
+  const saved = await Promise.allSettled([
     saveFile(folder, "jpg", full, "image/jpeg"),
     saveFile(`${folder}/thumbs`, "jpg", thumb, "image/jpeg"),
   ]);
-
-  // Re-check after the upload to stay within the roll even with parallel requests.
-  const after = await guestShotCount(guest.id);
-  if (after >= ev.shotsPerGuest) {
-    await deleteFiles([f.url, t.url]);
-    return NextResponse.json({ error: "roll_done", used: after }, { status: 403 });
+  const ok = saved.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
+  if (ok.length < 2) {
+    await Promise.all([release(), deleteFiles(ok.map((x) => x.url)).catch(() => {})]);
+    return NextResponse.json({ error: "storage" }, { status: 503 });
   }
+  const [f, t] = ok;
+  const after = Number(reserved.shots) - 1;
 
   const id = randomId(12);
-  await query(
-    `insert into photos (id, event_id, guest_id, guest_name, url, thumb_url, pathname, thumb_pathname, width, height, source)
+  try {
+    await query(
+      `insert into photos (id, event_id, guest_id, guest_name, url, thumb_url, pathname, thumb_pathname, width, height, source)
      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-    [
-      id,
-      ev.id,
-      guest.id,
-      guest.name,
-      f.url,
-      t.url,
-      f.pathname,
-      t.pathname,
-      Number(form.get("width")) || null,
-      Number(form.get("height")) || null,
-      source,
-    ]
-  );
+      [
+        id,
+        ev.id,
+        guest.id,
+        guest.name,
+        f.url,
+        t.url,
+        f.pathname,
+        t.pathname,
+        Number(form.get("width")) || null,
+        Number(form.get("height")) || null,
+        source,
+      ],
+    );
+  } catch (err) {
+    await Promise.all([release(), deleteFiles([f.url, t.url]).catch(() => {})]);
+    throw err;
+  }
+  await track("photo", ev.id, 0, full.size + thumb.size);
   const revealed = isRevealed(ev);
   return NextResponse.json({
     ok: true,
@@ -82,11 +98,12 @@ export async function GET(_req: Request, ctx: Ctx) {
   const admin = await isAdmin(ev);
   const revealed = isRevealed(ev);
   if (admin || (revealed && ev.visibility === "everyone")) {
-    return NextResponse.json({ revealed, photos: previewOnly(await listPhotos(ev.id, { includeHidden: admin }), await canDownload(ev)) });
+    return NextResponse.json({
+      revealed,
+      photos: previewOnly(await listPhotos(ev.id, { includeHidden: admin }), await canDownload(ev)),
+    });
   }
   const guest = await currentGuest(ev);
-  const mine = guest
-    ? await one<{ n: number }>(`select count(*)::int as n from photos where guest_id = $1`, [guest.id])
-    : null;
+  const mine = guest ? await one<{ n: number }>(`select count(*)::int as n from photos where guest_id = $1`, [guest.id]) : null;
   return NextResponse.json({ revealed, photos: [], mine: Number(mine?.n ?? 0) });
 }

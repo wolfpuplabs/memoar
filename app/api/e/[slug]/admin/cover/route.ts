@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isJpeg } from "@/lib/guard";
 import { query } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { deleteFiles, saveFile } from "@/lib/storage";
@@ -14,6 +15,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
   const file = form.get("cover");
   if (!(file instanceof Blob) || !file.size) return NextResponse.json({ error: "file" }, { status: 400 });
   if (file.size > 4 * 1024 * 1024) return NextResponse.json({ error: "cover_size" }, { status: 413 });
+  if (!(await isJpeg(file))) return NextResponse.json({ error: "cover_type" }, { status: 415 });
   const saved = await saveFile("covers", "jpg", file, "image/jpeg");
   await query(`update events set cover_url = $2, cover_pathname = $3 where id = $1`, [ev.id, saved.url, saved.pathname]);
   await deleteFiles([ev.coverUrl]);

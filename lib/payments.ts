@@ -2,6 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { cookies } from "next/headers";
 import { one, query } from "./db";
+import { track } from "./guard";
 import { hashToken, randomId, randomToken } from "./ids";
 import type { EventData } from "./events";
 
@@ -160,10 +161,13 @@ export async function applyStatus(n: MidtransStatus) {
   if (status === "paid" && Math.round(Number(n.gross_amount)) !== Number(pay.amount)) status = "failed";
   if (pay.status === "paid" && status !== "refunded") return { ...pay, status: "paid" };
 
-  await query(
-    `update payments set status = $2, payment_type = coalesce($3, payment_type), paid_at = case when $2 = 'paid' then now() else paid_at end where order_id = $1`,
+  // only the request that actually changes the status records the metric (webhook and polling can race)
+  const changed = await query(
+    `update payments set status = $2, payment_type = coalesce($3, payment_type), paid_at = case when $2 = 'paid' then now() else paid_at end
+      where order_id = $1 and status is distinct from $2 returning order_id`,
     [pay.order_id, status, n.payment_type ?? null]
   );
+  if (changed.length && (status === "paid" || status === "refunded")) await track(status, pay.event_id, Number(pay.amount));
   if (pay.scope === "event") {
     if (status === "paid") await query(`update events set downloads_unlocked = true where id = $1`, [pay.event_id]);
     if (status === "refunded") await query(`update events set downloads_unlocked = false where id = $1`, [pay.event_id]);

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { randomId, randomToken, hashToken } from "@/lib/ids";
 import { saveFile } from "@/lib/storage";
+import { isJpeg, limitByClient, track } from "@/lib/guard";
 import { markHostDevice, setAdminCookie } from "@/lib/auth";
 import { DEFAULT_PACKAGE, getEventPackage } from "@/lib/packages";
 import { LOOKS } from "@/lib/filters";
@@ -28,6 +29,9 @@ const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice
 
 export async function POST(req: Request) {
   try {
+    // free trial events are the abuse target: a few per hour per address is plenty for real hosts
+    const limited = (await limitByClient(req, "create", 6, 3600)) || (await limitByClient(req, "create-day", 20, 86400));
+    if (limited) return limited;
     const form = await req.formData();
     const data = JSON.parse(String(form.get("data") || "{}"));
 
@@ -63,6 +67,7 @@ export async function POST(req: Request) {
     const coverFile = form.get("cover");
     if (coverFile instanceof Blob && coverFile.size > 0) {
       if (coverFile.size > 4 * 1024 * 1024) return NextResponse.json({ error: "cover_size" }, { status: 413 });
+      if (!(await isJpeg(coverFile))) return NextResponse.json({ error: "cover_type" }, { status: 415 });
       cover = await saveFile(`covers`, "jpg", coverFile, "image/jpeg");
     }
 
@@ -99,6 +104,7 @@ export async function POST(req: Request) {
         pack.price === 0, // the free package has no paywall at all
       ]
     );
+    await track("created", id, pack.price);
     await markHostDevice();
     await setAdminCookie(id, adminToken);
     return NextResponse.json({ slug });

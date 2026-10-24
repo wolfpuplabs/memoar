@@ -188,8 +188,9 @@ export async function listGuests(eventId: string): Promise<GuestData[]> {
   return rows.map((r) => ({ id: r.id, name: r.name, createdAt: iso(r.created_at), shots: Number(r.shots) }));
 }
 
+/** Exposures used (reserved) by a guest — the counter the upload route enforces. */
 export async function guestShotCount(guestId: string) {
-  const r = await one<{ n: number }>(`select count(*)::int as n from photos where guest_id = $1`, [guestId]);
+  const r = await one<{ n: number }>(`select coalesce(shots, 0)::int as n from guests where id = $1`, [guestId]);
   return Number(r?.n ?? 0);
 }
 

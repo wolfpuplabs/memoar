@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { one, query } from "@/lib/db";
+import { query } from "@/lib/db";
+import { limitByClient, track } from "@/lib/guard";
 import { getEventBySlug, isOpen } from "@/lib/events";
 import { currentGuest, setGuestCookie } from "@/lib/auth";
 import { hashToken, randomId, randomToken } from "@/lib/ids";
@@ -20,17 +21,22 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
   const clean = typeof name === "string" ? name.trim().replace(/\s+/g, " ").slice(0, 40) : "";
   if (!clean) return NextResponse.json({ error: "name" }, { status: 400 });
 
-  const count = await one<{ n: number }>(`select count(*)::int as n from guests where event_id = $1`, [ev.id]);
-  if (Number(count?.n ?? 0) >= ev.maxGuests) return NextResponse.json({ error: "full" }, { status: 403 });
+  // a whole party often shares one Wi-Fi address, so the per-address limit is generous
+  const limited = await limitByClient(req, "join", 120, 600, ev.id);
+  if (limited) return limited;
 
   const id = randomId(14);
   const token = randomToken();
-  await query(`insert into guests (id, event_id, name, token_hash) values ($1, $2, $3, $4)`, [
-    id,
-    ev.id,
-    clean,
-    hashToken(token),
-  ]);
+  // the guest limit is what the host paid for: check and insert in one statement
+  const inserted = await query(
+    `insert into guests (id, event_id, name, token_hash, shots)
+     select $1, $2, $3, $4, 0
+      where (select count(*) from guests where event_id = $2) < $5
+     returning id`,
+    [id, ev.id, clean, hashToken(token), ev.maxGuests]
+  );
+  if (!inserted.length) return NextResponse.json({ error: "full" }, { status: 403 });
+  await track("joined", ev.id);
   await setGuestCookie(ev.id, token);
   return NextResponse.json({ ok: true, guest: { id, name: clean } });
 }

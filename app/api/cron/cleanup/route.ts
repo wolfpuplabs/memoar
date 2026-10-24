@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { deleteFiles } from "@/lib/storage";
+import { hashToken, safeEqualHex } from "@/lib/ids";
+import { pruneRateLimits } from "@/lib/guard";
 import { RETENTION_DAYS } from "@/lib/events";
 
 export const runtime = "nodejs";
@@ -17,11 +19,13 @@ const BUDGET_MS = 240_000;
  */
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
-  if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) {
+  const given = hashToken(req.headers.get("authorization") || "");
+  if (!secret || !safeEqualHex(given, hashToken(`Bearer ${secret}`))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
   const started = Date.now();
+  await pruneRateLimits().catch(() => {});
   const expired = await query<{ id: string; cover_url: string | null }>(
     `select id, cover_url from events where reveal_at < now() - ($1 || ' days')::interval order by reveal_at asc`,
     [String(RETENTION_DAYS)]

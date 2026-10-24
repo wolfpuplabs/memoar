@@ -4,12 +4,15 @@ import { getEventBySlug, isRevealed } from "@/lib/events";
 import { currentGuest, isAdmin } from "@/lib/auth";
 import { readFile } from "@/lib/storage";
 import { canDownload, claimFreeDownload } from "@/lib/payments";
+import { limitByClient, track } from "@/lib/guard";
 
 export const runtime = "nodejs";
 
 /** Same-origin download proxy so the browser can bundle photos into a ZIP. */
-export async function GET(_req: Request, ctx: { params: Promise<{ slug: string; id: string }> }) {
+export async function GET(req: Request, ctx: { params: Promise<{ slug: string; id: string }> }) {
   const { slug, id } = await ctx.params;
+  const limited = await limitByClient(req, "download", 600, 600);
+  if (limited) return limited;
   const ev = await getEventBySlug(slug);
   if (!ev) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const photo = await one<{ url: string; guest_id: string | null; hidden: boolean }>(
@@ -28,11 +31,13 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string; 
   }
   if (!allowed) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!(await canDownload(ev)) && !(await claimFreeDownload(ev, id))) {
+    await track("paywall", ev.id);
     return NextResponse.json({ error: "payment_required" }, { status: 402 });
   }
 
   const file = await readFile(photo.url);
   if (!file) return NextResponse.json({ error: "missing" }, { status: 404 });
+  await track("download", ev.id);
   return new NextResponse(file.body, {
     headers: {
       "content-type": file.type,
