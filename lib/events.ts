@@ -40,6 +40,7 @@ export type EventData = {
   maxGuests: number;
   visibility: Visibility;
   allowUploads: boolean;
+  guestLooks: boolean;
   coverUrl: string | null;
   coverPathname: string | null;
   downloadsUnlocked: boolean;
@@ -85,6 +86,7 @@ export function mapEvent(r: any): EventData {
     maxGuests: Number(r.max_guests),
     visibility: r.visibility,
     allowUploads: !!r.allow_uploads,
+    guestLooks: r.guest_looks !== false,
     coverUrl: r.cover_url,
     coverPathname: r.cover_pathname,
     downloadsUnlocked: !!r.downloads_unlocked,

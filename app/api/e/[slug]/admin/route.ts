@@ -50,7 +50,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
   await query(
     `update events set name=$2, host_name=$3, message=$4, starts_at=$5, ends_at=$6, reveal_mode=$7,
        reveal_delay_hours=$8, reveal_at=$9, filter=$10, date_stamp=$11, shots_per_guest=$12,
-       max_guests=$13, visibility=$14, allow_uploads=$15
+       max_guests=$13, visibility=$14, allow_uploads=$15, guest_looks=$16
      where id=$1`,
     [
       ev.id,
@@ -68,6 +68,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
       clampInt(body.maxGuests ?? ev.maxGuests, 1, MAX_GUESTS_LIMIT, ev.maxGuests),
       VISIBILITY.includes(body.visibility) ? body.visibility : ev.visibility,
       typeof body.allowUploads === "boolean" ? body.allowUploads : ev.allowUploads,
+      typeof body.guestLooks === "boolean" ? body.guestLooks : ev.guestLooks,
     ]
   );
   return NextResponse.json({ ok: true });

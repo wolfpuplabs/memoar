@@ -55,6 +55,7 @@ export default function CreateWizard({ maxGuestsLimit, origin, firstFree = false
     shotsPerGuest: 24,
     maxGuests: 50,
     allowUploads: true,
+    guestLooks: true,
     visibility: "everyone",
     slug: "",
   });
@@ -229,6 +230,13 @@ export default function CreateWizard({ maxGuestsLimit, origin, firstFree = false
                   ))}
                 </div>
               </div>
+              <label className="toggle field">
+                <span className="t-text">
+                  <b>{t.create.guestLooks}</b>
+                  <span>{t.create.guestLooksD}</span>
+                </span>
+                <input type="checkbox" checked={f.guestLooks} onChange={(e) => up("guestLooks", e.target.checked)} />
+              </label>
               <label className="toggle field">
                 <span className="t-text">
                   <b>{t.create.stamp}</b>

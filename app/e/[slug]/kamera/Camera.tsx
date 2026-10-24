@@ -6,7 +6,8 @@ import { useT } from "@/components/I18n";
 import { useShortCountdown } from "@/components/ui";
 import ShareSheet from "@/components/ShareSheet";
 import { BackIcon, FlashIcon, FlipIcon, GalleryIcon, QrIcon } from "@/components/UiIcons";
-import { getLook } from "@/lib/filters";
+import { getLook, LOOKS } from "@/lib/filters";
+import LookThumb from "@/components/LookThumb";
 import { developFrame, loadImageFile, type Processed } from "@/lib/image-client";
 
 type Props = {
@@ -19,6 +20,7 @@ type Props = {
   total: number;
   used: number;
   allowUploads: boolean;
+  guestLooks: boolean;
 };
 
 type Job = { shot: Processed; source: "camera" | "upload" };
@@ -26,7 +28,7 @@ type Caps = { zoom?: { min: number; max: number }; torch?: boolean };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export default function Camera({ slug, eventName, endsAt, look, stamp, total, used, allowUploads }: Props) {
+export default function Camera({ slug, eventName, endsAt, look: hostLook, stamp, total, used, allowUploads, guestLooks }: Props) {
   const { t, lang } = useT();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -47,6 +49,21 @@ export default function Camera({ slug, eventName, endsAt, look, stamp, total, us
   const toEnd = useShortCountdown(endsAt);
   const queue = useRef<Job[]>([]);
   const working = useRef(false);
+  // Guests may pick their own look (host's look is the default); the choice sticks per event.
+  const lookKey = `memoar-look-${slug}`;
+  const [look, setLook] = useState(hostLook);
+  const [picker, setPicker] = useState(false);
+  useEffect(() => {
+    if (!guestLooks) return setLook(hostLook);
+    try {
+      const saved = localStorage.getItem(lookKey);
+      if (saved && LOOKS.some((l) => l.id === saved)) setLook(saved);
+    } catch { /* storage unavailable */ }
+  }, [guestLooks, hostLook, lookKey]);
+  const chooseLook = (id: string) => {
+    setLook(id);
+    try { localStorage.setItem(lookKey, id); } catch { /* ignore */ }
+  };
   const lk = getLook(look);
 
   const showToast = useCallback((msg: string, ms = 1600) => {
@@ -247,7 +264,30 @@ export default function Camera({ slug, eventName, endsAt, look, stamp, total, us
         />
         <div className="cam-vignette" />
         {lk.overlay && camState === "on" && !done && <div className="c2-overlay" style={{ background: lk.overlay }} />}
-        <span className="c2-look">{lk.name[lang]}</span>
+        {guestLooks ? (
+          <button type="button" className={`c2-look c2-look-btn ${picker ? "on" : ""}`} onClick={() => setPicker((v) => !v)} aria-expanded={picker} aria-label={t.guest.pickLook}>
+            {lk.name[lang]} <span aria-hidden="true">▾</span>
+          </button>
+        ) : (
+          <span className="c2-look">{lk.name[lang]}</span>
+        )}
+        {guestLooks && picker && !done && (
+          <div className="c2-looks" role="radiogroup" aria-label={t.guest.pickLook}>
+            {LOOKS.map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                role="radio"
+                aria-checked={look === l.id}
+                className={`c2-lk ${look === l.id ? "on" : ""}`}
+                onClick={() => chooseLook(l.id)}
+              >
+                <LookThumb look={l} />
+                <span>{l.name[lang]}</span>
+              </button>
+            ))}
+          </div>
+        )}
         {stamp && camState === "on" && !done && <span className="c2-stamp">{stampText}</span>}
         <div key={flash} className={`cam-flash ${flash ? "go" : ""}`} />
         {done ? (

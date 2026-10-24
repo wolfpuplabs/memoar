@@ -25,6 +25,7 @@ export default async function CameraPage({ params }: { params: Promise<{ slug: s
       total={ev.shotsPerGuest}
       used={used}
       allowUploads={ev.allowUploads}
+      guestLooks={ev.guestLooks}
     />
   );
 }

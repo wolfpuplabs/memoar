@@ -69,8 +69,8 @@ export async function POST(req: Request) {
     await query(
       `insert into events (id, slug, name, kind, host_name, message, admin_hash, starts_at, ends_at,
         reveal_mode, reveal_delay_hours, reveal_at, filter, date_stamp, shots_per_guest, max_guests,
-        visibility, allow_uploads, cover_url, cover_pathname)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
+        visibility, allow_uploads, cover_url, cover_pathname, guest_looks)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
       [
         id,
         slug,
@@ -92,6 +92,7 @@ export async function POST(req: Request) {
         data.allowUploads !== false,
         cover?.url ?? null,
         cover?.pathname ?? null,
+        data.guestLooks !== false,
       ]
     );
     // First album created on this device: full-resolution downloads included for free.

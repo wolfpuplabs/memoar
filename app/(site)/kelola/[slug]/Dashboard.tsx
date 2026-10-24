@@ -17,7 +17,7 @@ type Ev = {
   id: string; slug: string; name: string; kind: string; hostName: string | null; message: string | null;
   startsAt: string; endsAt: string; revealMode: string; revealDelayHours: number; revealAt: string;
   filter: string; dateStamp: boolean; shotsPerGuest: number; maxGuests: number; visibility: string;
-  allowUploads: boolean; coverUrl: string | null; downloadsUnlocked: boolean; freeFirst: boolean;
+  allowUploads: boolean; guestLooks: boolean; coverUrl: string | null; downloadsUnlocked: boolean; freeFirst: boolean;
 };
 type Guest = { id: string; name: string; createdAt: string; shots: number };
 
@@ -271,6 +271,7 @@ function Settings({ ev, maxGuestsLimit, lang }: { ev: Ev; maxGuestsLimit: number
     maxGuests: ev.maxGuests,
     visibility: ev.visibility,
     allowUploads: ev.allowUploads,
+    guestLooks: ev.guestLooks,
   });
   useEffect(() => setF((p) => ({ ...p, startsAt: toLocalInput(ev.startsAt), endsAt: toLocalInput(ev.endsAt) })), [ev.startsAt, ev.endsAt]);
   const up = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
@@ -399,6 +400,10 @@ function Settings({ ev, maxGuestsLimit, lang }: { ev: Ev; maxGuestsLimit: number
           </div>
         </div>
         <div className="stack" style={{ marginBottom: 20 }}>
+          <label className="toggle">
+            <span className="t-text"><b>{t.create.guestLooks}</b><span>{t.create.guestLooksD}</span></span>
+            <input type="checkbox" checked={f.guestLooks} onChange={(e) => up("guestLooks", e.target.checked)} />
+          </label>
           <label className="toggle">
             <span className="t-text"><b>{t.create.stamp}</b><span>{t.create.stampD}</span></span>
             <input type="checkbox" checked={f.dateStamp} onChange={(e) => up("dateStamp", e.target.checked)} />
