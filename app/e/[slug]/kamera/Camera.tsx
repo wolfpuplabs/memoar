@@ -3,12 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useT } from "@/components/I18n";
+import { useShortCountdown } from "@/components/ui";
+import ShareSheet from "@/components/ShareSheet";
+import { BackIcon, FlashIcon, FlipIcon, GalleryIcon, QrIcon } from "@/components/UiIcons";
 import { getLook } from "@/lib/filters";
 import { developFrame, loadImageFile, type Processed } from "@/lib/image-client";
 
 type Props = {
   slug: string;
   eventName: string;
+  endsAt: string;
   guestName: string;
   look: string;
   stamp: boolean;
@@ -18,8 +22,11 @@ type Props = {
 };
 
 type Job = { shot: Processed; source: "camera" | "upload" };
+type Caps = { zoom?: { min: number; max: number }; torch?: boolean };
 
-export default function Camera({ slug, eventName, look, stamp, total, used, allowUploads }: Props) {
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export default function Camera({ slug, eventName, endsAt, look, stamp, total, used, allowUploads }: Props) {
   const { t, lang } = useT();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -30,6 +37,14 @@ export default function Camera({ slug, eventName, look, stamp, total, used, allo
   const [toast, setToast] = useState<string | null>(null);
   const [lastThumb, setLastThumb] = useState<string | null>(null);
   const [pending, setPending] = useState(0);
+  const [zoomLevels, setZoomLevels] = useState<number[]>([1, 2]);
+  const [zoom, setZoom] = useState(1);
+  const [nativeZoom, setNativeZoom] = useState(false);
+  const [torchAvail, setTorchAvail] = useState(false);
+  const [flashOn, setFlashOn] = useState(false);
+  const [screenFlash, setScreenFlash] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const toEnd = useShortCountdown(endsAt);
   const queue = useRef<Job[]>([]);
   const working = useRef(false);
   const lk = getLook(look);
@@ -54,6 +69,21 @@ export default function Camera({ slug, eventName, look, stamp, total, used, allo
         video: { facingMode: { ideal: mode }, width: { ideal: 2560 }, height: { ideal: 1920 } },
       });
       streamRef.current = stream;
+      // optical/native zoom and torch where the browser exposes them (mostly Android);
+      // otherwise fall back to a centre-crop digital zoom.
+      const track = stream.getVideoTracks()[0] as MediaStreamTrack | undefined;
+      const caps = (track?.getCapabilities?.() ?? {}) as unknown as Caps;
+      if (caps.zoom && caps.zoom.max > caps.zoom.min) {
+        const lv = [0.5, 1, 2, 3].filter((z) => z >= caps.zoom!.min - 0.01 && z <= caps.zoom!.max + 0.01);
+        setZoomLevels(lv.length ? lv : [1]);
+        setNativeZoom(true);
+        track?.applyConstraints({ advanced: [{ zoom: 1 } as MediaTrackConstraintSet] }).catch(() => {});
+      } else {
+        setZoomLevels([1, 2]);
+        setNativeZoom(false);
+      }
+      setZoom(1);
+      setTorchAvail(!!caps.torch);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play().catch(() => {});
@@ -80,6 +110,17 @@ export default function Camera({ slug, eventName, look, stamp, total, used, allo
     document.addEventListener("visibilitychange", onVis);
     return () => document.removeEventListener("visibilitychange", onVis);
   }, [facing, left, start]);
+
+  const pickZoom = (z: number) => {
+    setZoom(z);
+    if (nativeZoom) {
+      const track = streamRef.current?.getVideoTracks()[0];
+      track?.applyConstraints({ advanced: [{ zoom: z } as MediaTrackConstraintSet] }).catch(() => {});
+    }
+  };
+
+  const torch = (on: boolean) =>
+    streamRef.current?.getVideoTracks()[0]?.applyConstraints({ advanced: [{ torch: on } as MediaTrackConstraintSet] }).catch(() => {});
 
   const pump = useCallback(async () => {
     if (working.current) return;
@@ -136,14 +177,24 @@ export default function Camera({ slug, eventName, look, stamp, total, used, allo
   const shoot = async () => {
     const v = videoRef.current;
     if (!v || camState !== "on" || left - pending <= 0 || !v.videoWidth) return;
-    setFlash((n) => n + 1);
-    if ("vibrate" in navigator) navigator.vibrate?.(30);
     const optimisticLeft = left - pending - 1;
+    const useTorch = flashOn && torchAvail;
+    const useScreen = flashOn && !torchAvail && facing === "user";
     try {
-      const shot = await developFrame(v, v.videoWidth, v.videoHeight, { look, stamp, mirror: facing === "user" });
+      if (useTorch) { await torch(true); await sleep(260); }
+      if (useScreen) { setScreenFlash(true); await sleep(160); }
+      setFlash((n) => n + 1);
+      if ("vibrate" in navigator) navigator.vibrate?.(30);
+      const shot = await developFrame(v, v.videoWidth, v.videoHeight, {
+        look, stamp, mirror: facing === "user", zoom: nativeZoom ? 1 : zoom,
+      });
+      if (useTorch) torch(false);
+      setScreenFlash(false);
       enqueue(shot, "camera");
       if (optimisticLeft <= 0) stop();
     } catch {
+      setScreenFlash(false);
+      if (useTorch) torch(false);
       showToast(t.common.error, 2500);
     }
   };
@@ -168,30 +219,35 @@ export default function Camera({ slug, eventName, look, stamp, total, used, allo
   const d = new Date();
   const stampText = `'${String(d.getFullYear()).slice(2)}  ${String(d.getMonth() + 1).padStart(2, "0")}  ${String(d.getDate()).padStart(2, "0")}`;
 
+  const flashUsable = torchAvail || facing === "user";
+  const dial = [remaining + 1, remaining, remaining - 1];
+
   return (
     <div className="cam">
-      <div className="cam-top">
-        <Link href={`/e/${slug}`} className="cam-pill" aria-label={eventName}>
-          ← <span style={{ maxWidth: "38vw", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{eventName}</span>
-        </Link>
-        <span className={`cam-counter ${remaining <= 3 ? "low" : ""}`} title={t.guest.shotsLeft}>
-          {remaining}/{total}
-        </span>
-        <Link href={`/e/${slug}/album`} className="cam-pill">{t.guest.toAlbum}</Link>
+      <div className="c2-top">
+        <Link href={`/e/${slug}`} className="c2-round" aria-label={t.common.back}><BackIcon /></Link>
+        <div className="c2-title">
+          <b>{eventName}</b>
+          <small suppressHydrationWarning>{toEnd} {t.guest.left}</small>
+        </div>
+        <button type="button" className="c2-round c2-sq" onClick={() => setShareOpen(true)} aria-label={t.guest.shareTitle}><QrIcon /></button>
       </div>
 
-      <div className="cam-view">
+      <div className="c2-view">
         <video
           ref={videoRef}
           playsInline
           muted
           autoPlay
-          className={facing === "user" ? "mirror" : ""}
-          style={{ filter: lk.css, opacity: camState === "on" && !done ? 1 : 0.15 }}
+          style={{
+            filter: lk.css,
+            opacity: camState === "on" && !done ? 1 : 0.15,
+            transform: `${facing === "user" ? "scaleX(-1) " : ""}scale(${nativeZoom ? 1 : zoom})`,
+          }}
         />
         <div className="cam-vignette" />
-        <span className="cam-look">{lk.name[lang]}</span>
-        {stamp && camState === "on" && !done && <span className="cam-stamp">{stampText}</span>}
+        <span className="c2-look">{lk.name[lang]}</span>
+        {stamp && camState === "on" && !done && <span className="c2-stamp">{stampText}</span>}
         <div key={flash} className={`cam-flash ${flash ? "go" : ""}`} />
         {done ? (
           <div className="cam-msg">
@@ -203,37 +259,56 @@ export default function Camera({ slug, eventName, look, stamp, total, used, allo
         ) : null}
       </div>
 
-      <div className="cam-bar">
-        <div className="side">
-          {allowUploads ? (
-            <label className="cam-side-btn" aria-label={t.guest.upload} title={t.guest.upload} style={{ opacity: done ? 0.35 : 1 }}>
-              {lastThumb ? (
-                <img src={lastThumb} alt="" />
-              ) : (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="16" rx="3" /><circle cx="9" cy="10" r="2" /><path d="m21 16-5-5-9 9" /></svg>
-              )}
-              <input type="file" accept="image/*" multiple hidden disabled={done} onChange={(e) => { fromGallery(e.target.files); e.target.value = ""; }} />
-            </label>
-          ) : (
-            <span className="cam-side-btn" aria-hidden="true">
-              {lastThumb ? <img src={lastThumb} alt="" /> : null}
-            </span>
-          )}
+      <div className="c2-tools">
+        <button
+          type="button"
+          className={`c2-icon ${flashOn ? "on" : ""}`}
+          onClick={() => setFlashOn((f) => !f)}
+          aria-pressed={flashOn}
+          aria-label={t.guest.flash}
+          disabled={done || !flashUsable}
+          style={{ visibility: flashUsable ? "visible" : "hidden" }}
+        >
+          <FlashIcon off={!flashOn} />
+        </button>
+        <div className="c2-zoom" role="group" aria-label={t.guest.zoom}>
+          {zoomLevels.map((z) => (
+            <button key={z} type="button" className={zoom === z ? "on" : ""} onClick={() => pickZoom(z)} disabled={done}>
+              {zoom === z ? `${z}×` : z}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="c2-icon"
+          onClick={() => setFacing((f) => (f === "environment" ? "user" : "environment"))}
+          aria-label={t.guest.flip}
+          disabled={done}
+        >
+          <FlipIcon />
+        </button>
+      </div>
+
+      <div className="c2-bar">
+        <div className={`c2-dial ${remaining <= 3 ? "low" : ""}`} title={t.guest.shotsLeft} aria-label={`${remaining} ${t.guest.shotsLeft}`}>
+          <span aria-hidden="true">{dial[0] <= total ? dial[0] : ""}</span>
+          <b key={remaining}>{dial[1]}</b>
+          <span aria-hidden="true">{dial[2] >= 0 ? dial[2] : ""}</span>
         </div>
         <button className="shutter" onClick={shoot} disabled={done || camState !== "on"} aria-label={t.guest.shoot} />
-        <div className="side r">
-          <button
-            className="cam-side-btn"
-            onClick={() => setFacing((f) => (f === "environment" ? "user" : "environment"))}
-            aria-label={t.guest.flip}
-            title={t.guest.flip}
-            disabled={done}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 7h-3l-2-3H9L7 7H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1Z" /><path d="M9 13a3 3 0 0 1 5.2-2M15 13a3 3 0 0 1-5.2 2" /><path d="M14 9v2h2M10 17v-2H8" /></svg>
-          </button>
-        </div>
+        {allowUploads ? (
+          <label className="c2-thumb" aria-label={t.guest.upload} title={t.guest.upload} style={{ opacity: done ? 0.35 : 1 }}>
+            {lastThumb ? <img src={lastThumb} alt="" /> : <GalleryIcon />}
+            <input type="file" accept="image/*" multiple hidden disabled={done} onChange={(e) => { fromGallery(e.target.files); e.target.value = ""; }} />
+          </label>
+        ) : (
+          <span className="c2-thumb" aria-hidden="true">{lastThumb ? <img src={lastThumb} alt="" /> : null}</span>
+        )}
       </div>
+
+      {screenFlash && <div className="c2-screenflash" />}
       {(toast || pending > 0) && <div className="toast">{toast || `${t.guest.saving} (${pending})`}</div>}
+      <ShareSheet path={`/e/${slug}`} title={eventName} open={shareOpen} onClose={() => setShareOpen(false)} />
     </div>
   );
 }

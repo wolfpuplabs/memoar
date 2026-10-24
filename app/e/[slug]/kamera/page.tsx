@@ -18,6 +18,7 @@ export default async function CameraPage({ params }: { params: Promise<{ slug: s
     <Camera
       slug={ev.slug}
       eventName={ev.name}
+      endsAt={ev.endsAt}
       guestName={guest.name}
       look={ev.filter}
       stamp={ev.dateStamp}

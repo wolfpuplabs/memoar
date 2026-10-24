@@ -35,7 +35,7 @@ const PseudoQR = memo(function PseudoQR({ size = 25 }: { size?: number }) {
   );
 });
 
-const ALBUM: SceneKind[] = ["party", "cake", "toast", "dance", "couple", "party"];
+const ALBUM: SceneKind[] = ["dip", "cake", "glasses", "dance-floor", "kiss", "reception"];
 const N = 5;
 const DEV_SECONDS = 2 * 3600 + 41 * 60 + 9; // 02:41:09
 
@@ -150,10 +150,10 @@ export default function Story() {
 
             <div className="stage" aria-hidden="true">
               <div className="stage-inner">
-                <Print kind="cake" id="st-p1" caption="Bima · 20.14" className={`fly fly-1 ${on(4)}`} lite />
-                <Print kind="toast" id="st-p2" caption="Citra · 21.02" className={`fly fly-2 ${on(4)}`} lite />
-                <Print kind="dance" id="st-p3" caption="Ayu · 22.37" className={`fly fly-3 ${on(4)}`} lite />
-                <Print kind="couple" id="st-p4" caption="Dimas · 19.48" className={`fly fly-4 ${on(4)}`} lite />
+                <Print kind="cake-cut" caption="Bima · 20.14" className={`fly fly-1 ${on(4)}`} />
+                <Print kind="cheers" caption="Citra · 21.02" className={`fly fly-2 ${on(4)}`} />
+                <Print kind="shoulders" caption="Ayu · 22.37" className={`fly fly-3 ${on(4)}`} />
+                <Print kind="petals" caption="Dimas · 19.48" className={`fly fly-4 ${on(4)}`} />
 
                 <div className={`table-card ${on(1)}`}>
                   <PseudoQR />
@@ -194,7 +194,7 @@ export default function Story() {
                     </div>
 
                     <div className={`screen screen-shoot ${on(2)}`}>
-                      <Scene kind="party" id="st-party" />
+                      <Scene kind="night-dance" />
                       <div className="vf-top"><span>{demo}</span><span className="vf-count">{shots}/24</span></div>
                       <div className="vf-brackets"><i /><i /><i /><i /></div>
                       <div className="vf-stamp">&apos;26 10 24</div>
@@ -212,7 +212,7 @@ export default function Story() {
                     <div className={`screen screen-album ${on(4)} ${developed ? "developed" : ""}`}>
                       <div className="al-head"><b>{s.stage.album}</b><span>214 {s.stage.photos}</span></div>
                       <div className="al-grid">
-                        {ALBUM.map((k, i) => <Scene key={i} kind={k} id={`st-al${i}`} lite style={{ transitionDelay: `${i * 70}ms` }} />)}
+                        {ALBUM.map((k, i) => <Scene key={i} kind={k} lite style={{ transitionDelay: `${i * 70}ms` }} />)}
                       </div>
                     </div>
                   </div>

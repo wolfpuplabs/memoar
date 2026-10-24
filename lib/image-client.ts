@@ -14,12 +14,16 @@ export async function developFrame(
   source: CanvasImageSource,
   sw: number,
   sh: number,
-  opts: { look: string; stamp: boolean; mirror?: boolean; maxSide?: number; date?: Date }
+  opts: { look: string; stamp: boolean; mirror?: boolean; maxSide?: number; date?: Date; zoom?: number }
 ): Promise<Processed> {
   const maxSide = opts.maxSide ?? 1600;
-  const scale = Math.min(1, maxSide / Math.max(sw, sh));
-  const w = Math.round(sw * scale);
-  const h = Math.round(sh * scale);
+  // digital zoom: keep the centre 1/zoom of the frame, like the viewfinder shows
+  const z = Math.max(1, opts.zoom ?? 1);
+  const cw = sw / z;
+  const ch = sh / z;
+  const scale = Math.min(1, maxSide / Math.max(cw, ch));
+  const w = Math.round(cw * scale);
+  const h = Math.round(ch * scale);
   const c = document.createElement("canvas");
   c.width = w;
   c.height = h;
@@ -28,7 +32,7 @@ export async function developFrame(
     ctx.translate(w, 0);
     ctx.scale(-1, 1);
   }
-  ctx.drawImage(source, 0, 0, w, h);
+  ctx.drawImage(source, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, w, h);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   const img = ctx.getImageData(0, 0, w, h);
   applyLook(img, getLook(opts.look));

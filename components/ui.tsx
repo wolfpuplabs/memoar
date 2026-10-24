@@ -46,6 +46,20 @@ export function useCountdown(iso: string) {
   return ms;
 }
 
+/** "1d 23h", "5h 12m", "42m" — compact like a camera display. */
+export function useShortCountdown(iso: string) {
+  const { t } = useT();
+  const ms = useCountdown(iso);
+  if (ms === null) return "\u00a0";
+  const m = Math.floor(ms / 60000);
+  const d = Math.floor(m / 1440);
+  const h = Math.floor((m % 1440) / 60);
+  const mm = m % 60;
+  if (d > 0) return `${d}${t.time.d} ${h}${t.time.h}`;
+  if (h > 0) return `${h}${t.time.h} ${mm}${t.time.m}`;
+  return `${Math.max(mm, ms > 0 ? 1 : 0)}${t.time.m}`;
+}
+
 export function Countdown({ iso, onDone }: { iso: string; onDone?: () => void }) {
   const { t } = useT();
   const ms = useCountdown(iso);
