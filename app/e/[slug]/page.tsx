@@ -10,13 +10,13 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const ev = await getEventBySlug((await params).slug);
-  if (!ev) return { title: "memoar", robots: { index: false } };
+  if (!ev) return { title: "memoar by wolfpuplabs", robots: { index: false } };
   const description = `${ev.hostName ? `Invited by ${ev.hostName}. ` : ""}Grab the camera and capture this event from your point of view — no app needed.`;
   return {
     title: ev.name,
     description,
     robots: { index: false },
-    openGraph: { title: ev.name, description, type: "website", siteName: "memoar" },
+    openGraph: { title: ev.name, description, type: "website", siteName: "memoar by wolfpuplabs" },
     twitter: { card: "summary_large_image", title: ev.name, description },
   };
 }

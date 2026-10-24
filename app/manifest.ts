@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "memoar — a disposable camera for your event",
+    name: "memoar by wolfpuplabs",
     short_name: "memoar",
     description: "Turn your guests' phones into pocket film cameras. One QR code, no app.",
     start_url: "/",

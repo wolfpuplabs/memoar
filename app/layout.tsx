@@ -14,9 +14,9 @@ const description =
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: { default: "memoar — a disposable camera for your event", template: "%s · memoar" },
+  title: { default: "memoar by wolfpuplabs", template: "%s · memoar by wolfpuplabs" },
   description,
-  applicationName: "memoar",
+  applicationName: "memoar by wolfpuplabs",
   // Plain root paths (no query strings) so every browser's "Add to Home Screen" finds them.
   icons: {
     icon: [
@@ -32,13 +32,13 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
   openGraph: {
     type: "website",
-    siteName: "memoar",
+    siteName: "memoar by wolfpuplabs",
     locale: "en_US",
     alternateLocale: ["id_ID"],
-    title: "memoar — a disposable camera for your event",
+    title: "memoar by wolfpuplabs",
     description,
   },
-  twitter: { card: "summary_large_image", title: "memoar — a disposable camera for your event", description },
+  twitter: { card: "summary_large_image", title: "memoar by wolfpuplabs", description },
 };
 
 export const viewport: Viewport = {

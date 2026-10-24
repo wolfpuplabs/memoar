@@ -126,6 +126,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .logo svg { filter: drop-shadow(0 4px 14px rgba(255, 255, 255, 0.18)); }
 .logo-light { color: #fff; }
 a.logo-link { text-decoration: none; }
+.logo-text { display: inline-flex; align-items: baseline; gap: 6px; }
+.logo-by { font-family: var(--sans); font-weight: 500; font-size: 11px; letter-spacing: 0; opacity: .55; white-space: nowrap; }
+@media (max-width: 480px) { .logo-text { display: inline-grid; gap: 1px; line-height: 1; } .logo-by { font-size: 9.5px; } }
 
 .site-footer { margin-top: 60px; padding: 40px 0 56px; color: var(--ink-3); font-size: 14px; border-top: 1px solid var(--stroke); }
 .site-footer .wrap { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; }

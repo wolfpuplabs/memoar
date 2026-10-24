@@ -131,7 +131,10 @@ export function Logo({ light = false }: { light?: boolean }) {
         <circle cx="17" cy="17" r="3.2" fill="currentColor" />
         <circle cx="25.5" cy="11.5" r="1.4" fill="var(--accent)" />
       </svg>
-      memoar
+      <span className="logo-text">
+        memoar
+        <small className="logo-by">by wolfpuplabs</small>
+      </span>
     </span>
   );
 }
