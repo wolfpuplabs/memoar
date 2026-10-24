@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useT } from "@/components/I18n";
 import { LOOKS } from "@/lib/filters";
 import LookThumb from "@/components/LookThumb";
+import PackagePicker from "@/components/PackagePicker";
+import type { EventPackage } from "@/lib/packages";
 import { prepareCover } from "@/lib/image-client";
 
 const KINDS = ["pernikahan", "lamaran", "ulangtahun", "pesta", "wisuda", "kantor", "lainnya"];
@@ -27,7 +29,7 @@ function Stepper({ value, onChange, min, max, step = 1 }: { value: number; onCha
   );
 }
 
-export default function CreateWizard({ maxGuestsLimit, origin, firstFree = false }: { maxGuestsLimit: number; origin: string; firstFree?: boolean }) {
+export default function CreateWizard({ origin, packages }: { maxGuestsLimit: number; origin: string; packages: EventPackage[] }) {
   const { t, lang } = useT();
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -53,7 +55,7 @@ export default function CreateWizard({ maxGuestsLimit, origin, firstFree = false
     filter: LOOKS[0].id,
     dateStamp: true,
     shotsPerGuest: 24,
-    maxGuests: 50,
+    package: "pesta",
     allowUploads: true,
     guestLooks: true,
     visibility: "everyone",
@@ -151,7 +153,6 @@ export default function CreateWizard({ maxGuestsLimit, origin, firstFree = false
           {step + 1}/4 · {t.create.steps[step]}
         </span>
         <h1 style={{ fontSize: "clamp(32px,5vw,48px)", marginTop: 8 }}>{t.create.title}</h1>
-        {firstFree && <div className="free-badge"><span>★</span>{t.create.firstFree}</div>}
         <div className="wizard-steps">
           {t.create.steps.map((_, i) => <span key={i} className={i <= step ? "on" : ""} />)}
         </div>
@@ -259,15 +260,14 @@ export default function CreateWizard({ maxGuestsLimit, origin, firstFree = false
 
           {step === 3 && (
             <>
-              <div className="grid2">
-                <div className="field">
-                  <span className="label">{t.create.shots}</span>
-                  <Stepper value={f.shotsPerGuest} onChange={(n) => up("shotsPerGuest", n)} min={5} max={50} />
-                </div>
-                <div className="field">
-                  <span className="label">{t.create.maxGuests}</span>
-                  <Stepper value={f.maxGuests} onChange={(n) => up("maxGuests", n)} min={1} max={maxGuestsLimit} step={5} />
-                </div>
+              <div className="field">
+                <span className="label">{t.create.package}</span>
+                <PackagePicker packages={packages} value={f.package} onChange={(id) => up("package", id)} />
+                <span className="hint">{t.create.packageD}</span>
+              </div>
+              <div className="field">
+                <span className="label">{t.create.shots}</span>
+                <Stepper value={f.shotsPerGuest} onChange={(n) => up("shotsPerGuest", n)} min={5} max={50} />
               </div>
               <label className="toggle field">
                 <span className="t-text">

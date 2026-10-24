@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getEventBySlug, eventStats, guestShotCount, isOpen, isRevealed, listPhotos } from "@/lib/events";
+import { getEventBySlug, eventStats, guestShotCount, isOpen, isRevealed, listPhotos, previewOnly } from "@/lib/events";
 import { currentGuest, isAdmin } from "@/lib/auth";
 import { getT } from "@/lib/i18n-server";
 import { LangToggle, Logo } from "@/components/ui";
@@ -29,7 +29,7 @@ export default async function AlbumPage({
   const canSee = admin || (revealed && ev.visibility === "everyone");
   const photos = canSee ? await listPhotos(ev.id) : [];
   const mine = guest ? await guestShotCount(guest.id) : 0;
-  const pay = publicPayConfig();
+  const pay = publicPayConfig(ev);
   await reconcilePending(ev, admin).catch(() => null);
   const allowed = await canDownload((await reloadEvent(ev.slug)) ?? ev);
   const free = await freeDownloadState(ev);
@@ -58,7 +58,7 @@ export default async function AlbumPage({
           revealAt={ev.revealAt}
           revealed={revealed}
           hostOnly={ev.visibility === "host" && !admin}
-          photos={photos}
+          photos={previewOnly(photos, allowed)}
           totalPhotos={stats.photos}
           mine={mine}
           isGuest={!!guest}

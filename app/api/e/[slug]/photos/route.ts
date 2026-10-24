@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { one, query } from "@/lib/db";
-import { getEventBySlug, guestShotCount, isOpen, isRevealed, listPhotos } from "@/lib/events";
+import { getEventBySlug, guestShotCount, isOpen, isRevealed, listPhotos, previewOnly } from "@/lib/events";
+import { canDownload } from "@/lib/payments";
 import { currentGuest, isAdmin } from "@/lib/auth";
 import { randomId } from "@/lib/ids";
 import { saveFile, deleteFiles } from "@/lib/storage";
@@ -81,7 +82,7 @@ export async function GET(_req: Request, ctx: Ctx) {
   const admin = await isAdmin(ev);
   const revealed = isRevealed(ev);
   if (admin || (revealed && ev.visibility === "everyone")) {
-    return NextResponse.json({ revealed, photos: await listPhotos(ev.id, { includeHidden: admin }) });
+    return NextResponse.json({ revealed, photos: previewOnly(await listPhotos(ev.id, { includeHidden: admin }), await canDownload(ev)) });
   }
   const guest = await currentGuest(ev);
   const mine = guest

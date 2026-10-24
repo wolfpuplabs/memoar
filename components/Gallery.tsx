@@ -235,6 +235,7 @@ export function Gallery({
             </div>
           </div>
           <div className="lb-img" onClick={(e) => e.target === e.currentTarget && close()}>
+            {locked && <span className="lb-preview">{t.pay.preview}</span>}
             {frame === "none" ? (
               <img src={cur.url} alt="" />
             ) : (

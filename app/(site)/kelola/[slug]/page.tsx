@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getEventBySlug, listGuests, listPhotos, MAX_GUESTS_LIMIT } from "@/lib/events";
+import { getEventBySlug, listGuests, listPhotos, MAX_GUESTS_LIMIT, previewOnly } from "@/lib/events";
 import { adminToken } from "@/lib/auth";
 import { getT, siteOrigin } from "@/lib/i18n-server";
 import Dashboard from "./Dashboard";
-import { freeDownloadState, publicPayConfig, reconcilePending } from "@/lib/payments";
+import { eventPackages } from "@/lib/packages";
+import { canDownload, freeDownloadState, publicPayConfig, reconcilePending } from "@/lib/payments";
 
 export const metadata: Metadata = { title: "Manage event", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -43,13 +44,14 @@ export default async function ManagePage({
   return (
     <Dashboard
       ev={ev}
-      photos={photos}
+      photos={previewOnly(photos, await canDownload(ev))}
       guests={guests}
       isNew={baru === "1"}
       guestUrl={`${origin}/e/${ev.slug}`}
       adminUrl={`${origin}/k/${ev.slug}/${token}`}
       maxGuestsLimit={MAX_GUESTS_LIMIT}
-      pay={publicPayConfig()}
+      packages={eventPackages()}
+      pay={publicPayConfig(ev)}
       free={await freeDownloadState(ev)}
       initialOrder={order && /^[A-Z0-9-]{6,60}$/.test(order) ? order : null}
     />

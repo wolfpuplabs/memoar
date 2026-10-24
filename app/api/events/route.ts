@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { randomId, randomToken, hashToken } from "@/lib/ids";
 import { saveFile } from "@/lib/storage";
-import { isFirstEventOnDevice, markHostDevice, setAdminCookie } from "@/lib/auth";
+import { markHostDevice, setAdminCookie } from "@/lib/auth";
+import { DEFAULT_PACKAGE, getEventPackage } from "@/lib/packages";
 import { LOOKS } from "@/lib/filters";
 import {
   EVENT_KINDS,
@@ -45,6 +46,7 @@ export async function POST(req: Request) {
     const revealAt = computeRevealAt(revealMode, startsAt, endsAt, revealMode === "delayed" ? delay : 0);
     const filter = LOOKS.some((l) => l.id === data.filter) ? data.filter : LOOKS[0].id;
     const visibility = VISIBILITY.includes(data.visibility) ? data.visibility : "everyone";
+    const pack = getEventPackage(data.package) ?? getEventPackage(DEFAULT_PACKAGE)!;
 
     let slug = normalizeSlug(str(data.slug, 60));
     if (slug) {
@@ -69,8 +71,8 @@ export async function POST(req: Request) {
     await query(
       `insert into events (id, slug, name, kind, host_name, message, admin_hash, starts_at, ends_at,
         reveal_mode, reveal_delay_hours, reveal_at, filter, date_stamp, shots_per_guest, max_guests,
-        visibility, allow_uploads, cover_url, cover_pathname, guest_looks)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
+        visibility, allow_uploads, cover_url, cover_pathname, guest_looks, package, downloads_unlocked)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)`,
       [
         id,
         slug,
@@ -87,18 +89,16 @@ export async function POST(req: Request) {
         filter,
         data.dateStamp !== false,
         clampInt(data.shotsPerGuest, 5, MAX_SHOTS, 24),
-        clampInt(data.maxGuests, 1, MAX_GUESTS_LIMIT, 50),
+        Math.min(pack.guests, MAX_GUESTS_LIMIT),
         visibility,
         data.allowUploads !== false,
         cover?.url ?? null,
         cover?.pathname ?? null,
         data.guestLooks !== false,
+        pack.id,
+        pack.price === 0, // the free package has no paywall at all
       ]
     );
-    // First album created on this device: full-resolution downloads included for free.
-    if (await isFirstEventOnDevice()) {
-      await query(`update events set downloads_unlocked = true, free_first = true where id = $1`, [id]);
-    }
     await markHostDevice();
     await setAdminCookie(id, adminToken);
     return NextResponse.json({ slug });

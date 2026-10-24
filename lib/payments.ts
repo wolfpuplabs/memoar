@@ -32,7 +32,6 @@ export function payConfig() {
     snapUrl: process.env.MIDTRANS_SNAP_URL || `${snapHost}/snap/v1/transactions`,
     apiUrl: process.env.MIDTRANS_API_URL || apiHost,
     snapJs: `${snapHost}/snap/snap.js`,
-    priceEvent: int(process.env.PRICE_UNLOCK_EVENT, 49000),
     pricePerson: int(process.env.PRICE_UNLOCK_PERSON, 15000),
     freeDownloads: (() => {
       const n = Math.round(Number(process.env.FREE_DOWNLOADS_PER_PERSON ?? 3));
@@ -41,10 +40,17 @@ export function payConfig() {
   };
 }
 
-/** What the browser needs to show the paywall (no secrets). */
-export function publicPayConfig() {
+/** What the browser needs to show the paywall (no secrets). The host price is the event's package price. */
+export function publicPayConfig(ev: EventData) {
   const c = payConfig();
-  return { enabled: c.enabled, clientKey: c.clientKey, snapJs: c.snapJs, priceEvent: c.priceEvent, pricePerson: c.pricePerson, freeDownloads: c.freeDownloads };
+  return {
+    enabled: c.enabled && ev.packagePrice > 0,
+    clientKey: c.clientKey,
+    snapJs: c.snapJs,
+    priceEvent: ev.packagePrice,
+    pricePerson: c.pricePerson,
+    freeDownloads: c.freeDownloads,
+  };
 }
 export type PublicPayConfig = ReturnType<typeof publicPayConfig>;
 
@@ -68,7 +74,7 @@ async function buyerHash(ev: EventData, create: boolean) {
 
 /** True when this visitor may download full-resolution files for the event. */
 export async function canDownload(ev: EventData) {
-  if (!payConfig().enabled || ev.downloadsUnlocked) return true;
+  if (!payConfig().enabled || ev.downloadsUnlocked || ev.packagePrice === 0) return true;
   const h = await buyerHash(ev, false);
   if (!h) return false;
   const row = await one(
@@ -82,7 +88,7 @@ const auth = (serverKey: string) => "Basic " + Buffer.from(`${serverKey}:`).toSt
 
 export async function createPayment(ev: EventData, scope: Scope, origin: string, returnPath: string) {
   const c = payConfig();
-  const amount = scope === "event" ? c.priceEvent : c.pricePerson;
+  const amount = scope === "event" ? ev.packagePrice : c.pricePerson;
   const h = scope === "person" ? await buyerHash(ev, true) : null;
   const orderId = `MMR-${ev.id.slice(0, 8)}-${randomId(10)}`.toUpperCase();
   await query(

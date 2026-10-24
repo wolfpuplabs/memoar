@@ -1,4 +1,5 @@
 import "server-only";
+import { getEventPackage, packageForGuests } from "./packages";
 import { one, query } from "./db";
 
 export const EVENT_KINDS = [
@@ -38,6 +39,8 @@ export type EventData = {
   dateStamp: boolean;
   shotsPerGuest: number;
   maxGuests: number;
+  packageId: string;
+  packagePrice: number;
   visibility: Visibility;
   allowUploads: boolean;
   guestLooks: boolean;
@@ -84,6 +87,8 @@ export function mapEvent(r: any): EventData {
     dateStamp: !!r.date_stamp,
     shotsPerGuest: Number(r.shots_per_guest),
     maxGuests: Number(r.max_guests),
+    packageId: (getEventPackage(r.package) ?? packageForGuests(Number(r.max_guests))).id,
+    packagePrice: (getEventPackage(r.package) ?? packageForGuests(Number(r.max_guests))).price,
     visibility: r.visibility,
     allowUploads: !!r.allow_uploads,
     guestLooks: r.guest_looks !== false,
@@ -186,4 +191,12 @@ export async function listGuests(eventId: string): Promise<GuestData[]> {
 export async function guestShotCount(guestId: string) {
   const r = await one<{ n: number }>(`select count(*)::int as n from photos where guest_id = $1`, [guestId]);
   return Number(r?.n ?? 0);
+}
+
+/**
+ * Before downloads are paid for, the browser only ever receives the small
+ * preview: the full-resolution URL stays on the server (download proxy).
+ */
+export function previewOnly<T extends { url: string; thumbUrl: string }>(photos: T[], allowed: boolean): T[] {
+  return allowed ? photos : photos.map((p) => ({ ...p, url: p.thumbUrl }));
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
+import { getEventPackage } from "@/lib/packages";
+import { one, query } from "@/lib/db";
 import { requireAdmin, clearEventCookies } from "@/lib/auth";
 import { deleteFiles } from "@/lib/storage";
 import { LOOKS } from "@/lib/filters";
@@ -46,11 +47,16 @@ export async function PATCH(req: Request, ctx: Ctx) {
   const revealMode: RevealMode = REVEAL_MODES.includes(body.revealMode) ? body.revealMode : ev.revealMode;
   const delay = clampInt(body.revealDelayHours ?? ev.revealDelayHours, 1, 72, 12);
   const revealAt = computeRevealAt(revealMode, startsAt, endsAt, revealMode === "delayed" ? delay : 0);
+  const pack = getEventPackage(body.package) ?? getEventPackage(ev.packageId)!;
+  if (pack.id !== ev.packageId) {
+    const g = await one<{ n: number }>(`select count(*)::int as n from guests where event_id = $1`, [ev.id]);
+    if (Number(g?.n ?? 0) > pack.guests) return NextResponse.json({ error: "package_too_small" }, { status: 400 });
+  }
 
   await query(
     `update events set name=$2, host_name=$3, message=$4, starts_at=$5, ends_at=$6, reveal_mode=$7,
        reveal_delay_hours=$8, reveal_at=$9, filter=$10, date_stamp=$11, shots_per_guest=$12,
-       max_guests=$13, visibility=$14, allow_uploads=$15, guest_looks=$16
+       max_guests=$13, visibility=$14, allow_uploads=$15, guest_looks=$16, package=$17
      where id=$1`,
     [
       ev.id,
@@ -65,12 +71,23 @@ export async function PATCH(req: Request, ctx: Ctx) {
       LOOKS.some((l) => l.id === body.filter) ? body.filter : ev.filter,
       typeof body.dateStamp === "boolean" ? body.dateStamp : ev.dateStamp,
       clampInt(body.shotsPerGuest ?? ev.shotsPerGuest, 5, MAX_SHOTS, ev.shotsPerGuest),
-      clampInt(body.maxGuests ?? ev.maxGuests, 1, MAX_GUESTS_LIMIT, ev.maxGuests),
+      Math.min(pack.guests, MAX_GUESTS_LIMIT),
       VISIBILITY.includes(body.visibility) ? body.visibility : ev.visibility,
       typeof body.allowUploads === "boolean" ? body.allowUploads : ev.allowUploads,
       typeof body.guestLooks === "boolean" ? body.guestLooks : ev.guestLooks,
+      pack.id,
     ]
   );
+  // Package changes: free unlocks downloads; moving to a paid package re-locks them unless already paid for.
+  if (pack.id !== ev.packageId) {
+    if (pack.price === 0) await query(`update events set downloads_unlocked = true where id = $1`, [ev.id]);
+    else
+      await query(
+        `update events set downloads_unlocked = exists(select 1 from payments where event_id = $1 and scope = 'event' and status = 'paid') or free_first
+          where id = $1`,
+        [ev.id]
+      );
+  }
   return NextResponse.json({ ok: true });
 }
 

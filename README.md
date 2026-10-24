@@ -17,9 +17,13 @@ Kamera sekali pakai digital untuk acara. Host membuat acara, tamu memindai QR da
 
 Album bisa dilihat gratis; download resolusi penuh dibayar lewat Midtrans Snap (QRIS & GoPay):
 
-- **Host** membuka download untuk semua orang (`PRICE_UNLOCK_EVENT`, default Rp 49.000).
+- **Paket acara** menentukan batas tamu dan harga buka-download host:
+  Coba (10 tamu, gratis penuh), Intim (50 tamu, Rp 99.000), Pesta (150 tamu, Rp 249.000),
+  Gala (300 tamu, Rp 499.000). Harga bisa diubah lewat `EVENT_PACKAGE_PRICES`.
+- **Host** membuka download untuk semua orang dengan membayar harga paketnya.
 - **Tamu/pengunjung** bisa membuka download untuk dirinya sendiri (`PRICE_UNLOCK_PERSON`, default Rp 15.000).
-- **Gratis:** album pertama dari setiap perangkat host gratis penuh, dan di album lain setiap orang bisa download 3 foto pertama gratis (`FREE_DOWNLOADS_PER_PERSON`).
+- **Gratis:** paket Coba gratis penuh; di paket lain setiap orang bisa download 3 foto pertama gratis (`FREE_DOWNLOADS_PER_PERSON`).
+- Sebelum download dibuka, browser hanya menerima pratinjau kecil — file resolusi penuh hanya lewat proxy download yang memeriksa pembayaran.
 
 Setup:
 1. Isi `MIDTRANS_SERVER_KEY` dan `MIDTRANS_CLIENT_KEY` di Vercel (Sandbox dulu), lalu redeploy.

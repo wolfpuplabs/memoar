@@ -1,6 +1,8 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useState } from "react";
+import PackagePicker from "@/components/PackagePicker";
+import type { EventPackage } from "@/lib/packages";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useT } from "@/components/I18n";
@@ -17,7 +19,7 @@ type Ev = {
   id: string; slug: string; name: string; kind: string; hostName: string | null; message: string | null;
   startsAt: string; endsAt: string; revealMode: string; revealDelayHours: number; revealAt: string;
   filter: string; dateStamp: boolean; shotsPerGuest: number; maxGuests: number; visibility: string;
-  allowUploads: boolean; guestLooks: boolean; coverUrl: string | null; downloadsUnlocked: boolean; freeFirst: boolean;
+  allowUploads: boolean; guestLooks: boolean; packageId: string; packagePrice: number; coverUrl: string | null; downloadsUnlocked: boolean; freeFirst: boolean;
 };
 type Guest = { id: string; name: string; createdAt: string; shots: number };
 
@@ -28,9 +30,9 @@ const toLocalInput = (iso: string) => {
 };
 
 export default function Dashboard({
-  ev, photos: initialPhotos, guests, isNew, guestUrl, adminUrl, maxGuestsLimit, pay, initialOrder, free,
+  ev, photos: initialPhotos, guests, isNew, guestUrl, adminUrl, maxGuestsLimit, packages, pay, initialOrder, free,
 }: {
-  ev: Ev; photos: GPhoto[]; guests: Guest[]; isNew: boolean; guestUrl: string; adminUrl: string; maxGuestsLimit: number;
+  ev: Ev; photos: GPhoto[]; guests: Guest[]; isNew: boolean; guestUrl: string; adminUrl: string; maxGuestsLimit: number; packages: EventPackage[];
   pay: PayCfg; initialOrder: string | null;
   free: { left: number; used: string[] };
 }) {
@@ -213,7 +215,7 @@ export default function Dashboard({
             )}
           </div>
         )}
-        {tab === "settings" && <Settings ev={ev} maxGuestsLimit={maxGuestsLimit} lang={lang} />}
+        {tab === "settings" && <Settings ev={ev} packages={packages} lang={lang} />}
       </div>
     </div>
   );
@@ -254,7 +256,7 @@ function Share({ ev, guestUrl, adminUrl }: { ev: Ev; guestUrl: string; adminUrl:
   );
 }
 
-function Settings({ ev, maxGuestsLimit, lang }: { ev: Ev; maxGuestsLimit: number; lang: "id" | "en" }) {
+function Settings({ ev, packages, lang }: { ev: Ev; packages: EventPackage[]; lang: "id" | "en" }) {
   const { t } = useT();
   const router = useRouter();
   const [f, setF] = useState({
@@ -268,7 +270,7 @@ function Settings({ ev, maxGuestsLimit, lang }: { ev: Ev; maxGuestsLimit: number
     filter: ev.filter,
     dateStamp: ev.dateStamp,
     shotsPerGuest: ev.shotsPerGuest,
-    maxGuests: ev.maxGuests,
+    package: ev.packageId,
     visibility: ev.visibility,
     allowUploads: ev.allowUploads,
     guestLooks: ev.guestLooks,
@@ -288,6 +290,10 @@ function Settings({ ev, maxGuestsLimit, lang }: { ev: Ev; maxGuestsLimit: number
       body: JSON.stringify({ ...f, startsAt: new Date(f.startsAt).toISOString(), endsAt: new Date(f.endsAt).toISOString() }),
     });
     setState(r.ok ? "saved" : "error");
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      if (j.error === "package_too_small") setErr(t.create.errPackage);
+    }
     if (r.ok) {
       router.refresh();
       setTimeout(() => setState("idle"), 1800);
@@ -379,16 +385,15 @@ function Settings({ ev, maxGuestsLimit, lang }: { ev: Ev; maxGuestsLimit: number
             ))}
           </div>
         </div>
-        <div className="grid2">
-          <label className="field">
-            <span className="label">{t.create.shots}</span>
-            <input type="number" min={5} max={50} value={f.shotsPerGuest} onChange={(e) => up("shotsPerGuest", Number(e.target.value))} />
-          </label>
-          <label className="field">
-            <span className="label">{t.create.maxGuests}</span>
-            <input type="number" min={1} max={maxGuestsLimit} value={f.maxGuests} onChange={(e) => up("maxGuests", Number(e.target.value))} />
-          </label>
+        <div className="field">
+          <span className="label">{t.create.package}</span>
+          <PackagePicker packages={packages} value={f.package} onChange={(id) => up("package", id)} />
+          <span className="hint">{t.create.packageD}</span>
         </div>
+        <label className="field">
+          <span className="label">{t.create.shots}</span>
+          <input type="number" min={5} max={50} value={f.shotsPerGuest} onChange={(e) => up("shotsPerGuest", Number(e.target.value))} />
+        </label>
         <div className="field">
           <span className="label">{t.create.visibility}</span>
           <div className="choice-grid">
