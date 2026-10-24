@@ -15,7 +15,7 @@ export async function developFrame(
   source: CanvasImageSource,
   sw: number,
   sh: number,
-  opts: { look: string; stamp: boolean; mirror?: boolean; maxSide?: number; date?: Date; zoom?: number }
+  opts: { look: string; stamp: boolean; mirror?: boolean; maxSide?: number; date?: Date; zoom?: number; overlay?: CanvasImageSource | null }
 ): Promise<Processed> {
   const maxSide = opts.maxSide ?? 1600;
   // digital zoom: keep the centre 1/zoom of the frame, like the viewfinder shows
@@ -34,6 +34,8 @@ export async function developFrame(
     ctx.scale(-1, 1);
   }
   ctx.drawImage(source, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, w, h);
+  // AR accessories are drawn in the same frame coordinates, so they get the same crop, mirror and film look
+  if (opts.overlay) ctx.drawImage(opts.overlay, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, w, h);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   const img = ctx.getImageData(0, 0, w, h);
   applyLook(img, getLook(opts.look));

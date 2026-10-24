@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useT } from "@/components/I18n";
 import { useShortCountdown } from "@/components/ui";
 import ShareSheet from "@/components/ShareSheet";
-import { BackIcon, FlashIcon, FlipIcon, GalleryIcon, QrIcon } from "@/components/UiIcons";
+import { ArButtonIcon, ArIcon, BackIcon, FlashIcon, FlipIcon, GalleryIcon, QrIcon } from "@/components/UiIcons";
+import { AR_EFFECTS, detect, drawEffect, getEffect, loadTracker } from "@/lib/ar";
+import type { NormalizedLandmark } from "@mediapipe/tasks-vision";
 import { getLook, LOOKS } from "@/lib/filters";
 import LookThumb from "@/components/LookThumb";
 import { developFrame, loadImageFile, type Processed } from "@/lib/image-client";
@@ -65,6 +67,15 @@ export default function Camera({ slug, eventName, endsAt, look: hostLook, stamp,
     try { localStorage.setItem(lookKey, id); } catch { /* ignore */ }
   };
   const lk = getLook(look);
+
+  // AR accessories: tracking runs on the live video; accessories are drawn on a
+  // canvas laid exactly over it and merged into the photo when the shutter fires.
+  const arCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [arId, setArId] = useState<string | null>(null);
+  const [arOpen, setArOpen] = useState(false);
+  const [arStatus, setArStatus] = useState<"idle" | "loading" | "ready">("idle");
+  const [arSeen, setArSeen] = useState(true);
+  const arEffect = getEffect(arId);
 
   const showToast = useCallback((msg: string, ms = 1600) => {
     setToast(msg);
@@ -139,6 +150,68 @@ export default function Camera({ slug, eventName, endsAt, look: hostLook, stamp,
   const torch = (on: boolean) =>
     streamRef.current?.getVideoTracks()[0]?.applyConstraints({ advanced: [{ torch: on } as MediaTrackConstraintSet] }).catch(() => {});
 
+  useEffect(() => {
+    const eff = getEffect(arId);
+    const cv = arCanvasRef.current;
+    const clear = () => cv?.getContext("2d")?.clearRect(0, 0, cv.width, cv.height);
+    if (!eff || !cv) {
+      clear();
+      setArStatus("idle");
+      return;
+    }
+    let stopped = false;
+    let raf = 0;
+    let lastDetect = 0;
+    let lastSeen = performance.now();
+    let seen = true;
+    let sets: NormalizedLandmark[][] = [];
+    setArStatus("loading");
+    setArSeen(true);
+    loadTracker(eff.kind)
+      .then((tracker) => {
+        if (stopped) return;
+        setArStatus("ready");
+        const tick = (now: number) => {
+          if (stopped) return;
+          const v = videoRef.current;
+          const ctx = cv.getContext("2d");
+          if (v && ctx && v.videoWidth && v.readyState >= 2) {
+            if (cv.width !== v.videoWidth || cv.height !== v.videoHeight) {
+              cv.width = v.videoWidth;
+              cv.height = v.videoHeight;
+            }
+            if (now - lastDetect > 60) {
+              lastDetect = now;
+              try {
+                sets = detect(eff.kind, tracker, v);
+                if (sets.length) lastSeen = now;
+              } catch { /* skip this frame */ }
+            }
+            ctx.clearRect(0, 0, cv.width, cv.height);
+            drawEffect(ctx, eff, sets, cv.width, cv.height, now / 1000);
+            const s = now - lastSeen < 1500;
+            if (s !== seen) {
+              seen = s;
+              setArSeen(s);
+            }
+          }
+          raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+      })
+      .catch(() => {
+        if (stopped) return;
+        setArId(null);
+        setArStatus("idle");
+        showToast(t.guest.arError, 2800);
+      });
+    return () => {
+      stopped = true;
+      cancelAnimationFrame(raf);
+      clear();
+    };
+  }, [arId, showToast, t.guest.arError]);
+
   const pump = useCallback(async () => {
     if (working.current) return;
     working.current = true;
@@ -204,6 +277,7 @@ export default function Camera({ slug, eventName, endsAt, look: hostLook, stamp,
       if ("vibrate" in navigator) navigator.vibrate?.(30);
       const shot = await developFrame(v, v.videoWidth, v.videoHeight, {
         look, stamp, mirror: facing === "user", zoom: nativeZoom ? 1 : zoom,
+        overlay: arEffect && arStatus === "ready" ? arCanvasRef.current : null,
       });
       if (useTorch) torch(false);
       setScreenFlash(false);
@@ -262,10 +336,20 @@ export default function Camera({ slug, eventName, endsAt, look: hostLook, stamp,
             transform: `${facing === "user" ? "scaleX(-1) " : ""}scale(${nativeZoom ? 1 : zoom})`,
           }}
         />
+        <canvas
+          ref={arCanvasRef}
+          className="c2-ar"
+          aria-hidden="true"
+          style={{
+            filter: lk.css,
+            display: arEffect && camState === "on" && !done ? "block" : "none",
+            transform: `${facing === "user" ? "scaleX(-1) " : ""}scale(${nativeZoom ? 1 : zoom})`,
+          }}
+        />
         <div className="cam-vignette" />
         {lk.overlay && camState === "on" && !done && <div className="c2-overlay" style={{ background: lk.overlay }} />}
         {guestLooks ? (
-          <button type="button" className={`c2-look c2-look-btn ${picker ? "on" : ""}`} onClick={() => setPicker((v) => !v)} aria-expanded={picker} aria-label={t.guest.pickLook}>
+          <button type="button" className={`c2-look c2-look-btn ${picker ? "on" : ""}`} onClick={() => { setPicker((v) => !v); setArOpen(false); }} aria-expanded={picker} aria-label={t.guest.pickLook}>
             {lk.name[lang]} <span aria-hidden="true">▾</span>
           </button>
         ) : (
@@ -287,6 +371,47 @@ export default function Camera({ slug, eventName, endsAt, look: hostLook, stamp,
               </button>
             ))}
           </div>
+        )}
+        {camState === "on" && !done && (
+          <button
+            type="button"
+            className={`c2-ar-btn ${arEffect ? "active" : ""} ${arOpen ? "on" : ""}`}
+            onClick={() => { setArOpen((v) => !v); setPicker(false); }}
+            aria-expanded={arOpen}
+            aria-label={t.guest.arPick}
+          >
+            {arEffect ? <ArIcon id={arEffect.id} size={18} /> : <ArButtonIcon />} {t.guest.ar}
+          </button>
+        )}
+        {arOpen && !done && (
+          <div className="c2-looks c2-ars" role="radiogroup" aria-label={t.guest.arPick}>
+            {[{ id: "none", name: { id: t.guest.arNone, en: t.guest.arNone } }, ...AR_EFFECTS].map((e) => {
+              const on = (arId ?? "none") === e.id;
+              return (
+                <button
+                  key={e.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  className={`c2-lk ${on ? "on" : ""}`}
+                  onClick={() => setArId(e.id === "none" ? null : e.id)}
+                >
+                  <span className="c2-ar-ico">
+                    <ArIcon id={e.id} />
+                    {on && arStatus === "loading" && <i className="c2-spin" />}
+                  </span>
+                  <span>{e.name[lang]}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {arEffect && camState === "on" && !done && (arStatus === "loading" || !arSeen) && (
+          <span className="c2-ar-hint">
+            {arStatus === "loading"
+              ? t.guest.arLoading
+              : arEffect.kind === "face" ? t.guest.arHintFace : arEffect.kind === "hand" ? t.guest.arHintHand : t.guest.arHintPose}
+          </span>
         )}
         {stamp && camState === "on" && !done && <span className="c2-stamp">{stampText}</span>}
         <div key={flash} className={`cam-flash ${flash ? "go" : ""}`} />

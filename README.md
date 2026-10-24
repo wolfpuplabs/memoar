@@ -60,3 +60,12 @@ app/e/[slug]/        undangan, kamera, album (tamu)
 app/api/             REST API (acara, gabung, foto, admin)
 lib/                 db, storage, auth, filter film, i18n
 ```
+
+## Filter AR
+
+Tamu bisa memasang aksesori AR di kamera (kacamata, topi pesta, mahkota, kumis, kelinci,
+mahkota bunga, kilau jari, hati, dasi kupu-kupu, sayap). Tracking wajah/tangan/badan memakai
+MediaPipe Tasks Vision (Apache-2.0) yang berjalan di browser; runtime WASM disalin dari
+`node_modules` ke `public/mediapipe/wasm` saat build (`scripts/copy-mediapipe.mjs`) dan model
+disimpan di `public/mediapipe/models` (diunduh oleh workflow `mediapipe-models`). Model hanya
+dimuat saat tamu menyalakan efek. Aksesori ikut tercetak di foto dan mendapat film look yang sama.
