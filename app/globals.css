@@ -771,3 +771,6 @@ textarea { resize: vertical; min-height: 84px; }
 .unlock-done { display: inline-flex; margin-bottom: 14px; font-size: 13px; font-weight: 600; padding: 7px 13px; border-radius: 999px;
   background: rgba(255,255,255,.1); border: 1px solid var(--stroke-2); }
 .btn svg { flex-shrink: 0; }
+.free-badge { display: flex; align-items: center; gap: 10px; margin: 14px 0 0; padding: 10px 14px; border-radius: 14px; font-size: 14px; font-weight: 600;
+  background: linear-gradient(160deg, rgba(255,255,255,.14), rgba(255,255,255,.05)); border: 1px solid var(--stroke-2); }
+.free-badge span { width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; background: #f5f5f7; color: #0a0a0c; font-size: 12px; }

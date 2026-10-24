@@ -16,7 +16,7 @@ type Ev = {
   id: string; slug: string; name: string; kind: string; hostName: string | null; message: string | null;
   startsAt: string; endsAt: string; revealMode: string; revealDelayHours: number; revealAt: string;
   filter: string; dateStamp: boolean; shotsPerGuest: number; maxGuests: number; visibility: string;
-  allowUploads: boolean; coverUrl: string | null; downloadsUnlocked: boolean;
+  allowUploads: boolean; coverUrl: string | null; downloadsUnlocked: boolean; freeFirst: boolean;
 };
 type Guest = { id: string; name: string; createdAt: string; shots: number };
 
@@ -143,7 +143,7 @@ export default function Dashboard({
           <>
             {pay.enabled && (
               unlocked ? (
-                <div className="unlock-done">✓ {t.pay.unlockedAll}</div>
+                <div className="unlock-done">{ev.freeFirst ? `★ ${t.pay.freeFirst}` : `✓ ${t.pay.unlockedAll}`}</div>
               ) : (
                 <div className="card unlock-card">
                   <span className="pw-lock"><LockIcon size={18} /></span>

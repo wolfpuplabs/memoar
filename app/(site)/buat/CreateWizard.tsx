@@ -26,7 +26,7 @@ function Stepper({ value, onChange, min, max, step = 1 }: { value: number; onCha
   );
 }
 
-export default function CreateWizard({ maxGuestsLimit, origin }: { maxGuestsLimit: number; origin: string }) {
+export default function CreateWizard({ maxGuestsLimit, origin, firstFree = false }: { maxGuestsLimit: number; origin: string; firstFree?: boolean }) {
   const { t, lang } = useT();
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -149,6 +149,7 @@ export default function CreateWizard({ maxGuestsLimit, origin }: { maxGuestsLimi
           {step + 1}/4 · {t.create.steps[step]}
         </span>
         <h1 style={{ fontSize: "clamp(32px,5vw,48px)", marginTop: 8 }}>{t.create.title}</h1>
+        {firstFree && <div className="free-badge"><span>★</span>{t.create.firstFree}</div>}
         <div className="wizard-steps">
           {t.create.steps.map((_, i) => <span key={i} className={i <= step ? "on" : ""} />)}
         </div>

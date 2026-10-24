@@ -43,6 +43,8 @@ export type EventData = {
   coverUrl: string | null;
   coverPathname: string | null;
   downloadsUnlocked: boolean;
+  /** first album created on this device: downloads included for free */
+  freeFirst: boolean;
   createdAt: string;
 };
 
@@ -86,6 +88,7 @@ export function mapEvent(r: any): EventData {
     coverUrl: r.cover_url,
     coverPathname: r.cover_pathname,
     downloadsUnlocked: !!r.downloads_unlocked,
+    freeFirst: !!r.free_first,
     createdAt: iso(r.created_at),
   };
 }

@@ -20,6 +20,23 @@ export async function setAdminCookie(eventId: string, token: string) {
   (await cookies()).set(adminCookie(eventId), token, cookieOpts);
 }
 
+const HOST_DEVICE_COOKIE = "mh_used";
+
+/**
+ * True when this browser has never created an event (no host cookie of any
+ * event and no "used" marker). Hosts have no accounts, so the free first
+ * album is granted once per device.
+ */
+export async function isFirstEventOnDevice() {
+  const jar = await cookies();
+  if (jar.get(HOST_DEVICE_COOKIE)) return false;
+  return !jar.getAll().some((c) => c.name.startsWith("ma_"));
+}
+
+export async function markHostDevice() {
+  (await cookies()).set(HOST_DEVICE_COOKIE, "1", { ...cookieOpts, maxAge: YEAR * 5 });
+}
+
 export async function setGuestCookie(eventId: string, token: string) {
   (await cookies()).set(guestCookie(eventId), token, cookieOpts);
 }

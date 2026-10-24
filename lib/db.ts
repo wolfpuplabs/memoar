@@ -55,6 +55,7 @@ const SCHEMA = [
   `create index if not exists photos_event_idx on photos(event_id, created_at)`,
   `create index if not exists photos_guest_idx on photos(guest_id)`,
   `alter table events add column if not exists downloads_unlocked boolean not null default false`,
+  `alter table events add column if not exists free_first boolean not null default false`,
   `create table if not exists payments (
     order_id text primary key,
     event_id text not null references events(id) on delete cascade,

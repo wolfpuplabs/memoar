@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { randomId, randomToken, hashToken } from "@/lib/ids";
 import { saveFile } from "@/lib/storage";
-import { setAdminCookie } from "@/lib/auth";
+import { isFirstEventOnDevice, markHostDevice, setAdminCookie } from "@/lib/auth";
 import { LOOKS } from "@/lib/filters";
 import {
   EVENT_KINDS,
@@ -94,6 +94,11 @@ export async function POST(req: Request) {
         cover?.pathname ?? null,
       ]
     );
+    // First album created on this device: full-resolution downloads included for free.
+    if (await isFirstEventOnDevice()) {
+      await query(`update events set downloads_unlocked = true, free_first = true where id = $1`, [id]);
+    }
+    await markHostDevice();
     await setAdminCookie(id, adminToken);
     return NextResponse.json({ slug });
   } catch (err) {
