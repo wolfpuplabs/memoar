@@ -155,7 +155,10 @@ h3 { font-size: 20px; letter-spacing: -0.02em; line-height: 1.25; font-weight: 6
 h1 em, h2 em {
   font-family: var(--serif); font-style: italic; font-weight: 400; letter-spacing: -0.01em;
   background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent;
-  padding-right: 0.06em;
+  /* italic serif swashes (the g's tail) reach outside the glyph box; widen the painted
+     area so background-clip doesn't cut them, without moving the text */
+  padding: 0 0.08em 0.14em 0.16em; margin-left: -0.16em; margin-right: -0.02em;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
 }
 .lead { font-size: clamp(17px, 2vw, 20px); color: var(--ink-2); max-width: 60ch; }
 .muted { color: var(--ink-2); }
