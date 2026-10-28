@@ -5,13 +5,13 @@ import { applyStatus } from "./payments";
 import type { EventData } from "./events";
 
 /**
- * Manual QRIS for large packages: the host scans the merchant's static QRIS
+ * Manual QRIS for host packages: the host scans the merchant's static QRIS
  * and pays an amount with a unique 3-digit code, the operator matches it in
  * the bank mutation list and confirms it on /ops. No webhook exists for a
  * static QRIS, so nothing here is confirmed automatically.
  *
  * MANUAL_QRIS      static QRIS payloads (the text inside each QR code), one per line or "|"-separated
- * MANUAL_QRIS_MIN  smallest package price that may use it (default Rp 499.000)
+ * MANUAL_QRIS_MIN  smallest package price that may use it (default Rp 499.000; 1 = every paid package)
  */
 
 export const MANUAL_PREFIX = "MQ-";

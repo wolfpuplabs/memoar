@@ -57,7 +57,7 @@ export function LockIcon({ size = 14 }: { size?: number }) {
  * per-person unlock. `initialOrder` resumes polling after a GoPay redirect.
  */
 export default function Paywall({
-  slug, admin, cfg, open, onClose, onUnlocked, initialOrder, note,
+  slug, admin, cfg, open, onClose, onUnlocked, initialOrder, note, onManual,
 }: {
   slug: string;
   admin: boolean;
@@ -68,6 +68,8 @@ export default function Paywall({
   initialOrder?: string | null;
   /** context shown at the top, e.g. why the sheet opened */
   note?: string | null;
+  /** opens the manual QRIS sheet (host only, when configured) */
+  onManual?: () => void;
 }) {
   const { t } = useT();
   const p = t.pay;
@@ -201,6 +203,9 @@ export default function Paywall({
             <button className="btn btn-accent btn-block" onClick={pay} disabled={busy}>
               {busy ? p.opening : `${admin ? p.eventBtn : p.personBtn} · ${rupiah(price)}`}
             </button>
+            {admin && cfg.manual && onManual && (
+              <button type="button" className="btn btn-ghost btn-block" onClick={onManual}>{p.manualBtn}</button>
+            )}
             {!admin && <p className="hint" style={{ textAlign: "center", margin: 0 }}>{p.orHost}</p>}
             <p className="hint" style={{ textAlign: "center", margin: 0 }}>{p.secure}</p>
             <button className="btn btn-ghost btn-small" style={{ justifySelf: "center" }} onClick={onClose}>{t.common.cancel}</button>

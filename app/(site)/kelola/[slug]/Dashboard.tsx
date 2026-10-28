@@ -195,6 +195,7 @@ export default function Dashboard({
             open={sheet}
             note={note}
             initialOrder={initialOrder}
+            onManual={() => { setSheet(false); setManualOpen(true); }}
             onClose={() => setSheet(false)}
             onUnlocked={() => { setUnlocked(true); setSheet(false); router.replace(`/kelola/${ev.slug}`); router.refresh(); }}
           />
