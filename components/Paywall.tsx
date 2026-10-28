@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useT } from "./I18n";
 
-export type PayCfg = { enabled: boolean; clientKey: string; snapJs: string; priceEvent: number; pricePerson: number; freeDownloads: number };
+export type PayCfg = { enabled: boolean; clientKey: string; snapJs: string; priceEvent: number; pricePerson: number; freeDownloads: number; manual?: boolean };
 
 type SnapResult = { order_id?: string; transaction_status?: string };
 type SnapApi = {

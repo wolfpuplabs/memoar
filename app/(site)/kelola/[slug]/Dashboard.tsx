@@ -14,6 +14,7 @@ import LookThumb from "@/components/LookThumb";
 import { expiresAt } from "@/lib/retention";
 import { prepareCover, saveBlob } from "@/lib/image-client";
 import Paywall, { LockIcon, rupiah, type PayCfg } from "@/components/Paywall";
+import ManualQris from "@/components/ManualQris";
 
 type Ev = {
   id: string; slug: string; name: string; kind: string; hostName: string | null; message: string | null;
@@ -41,6 +42,7 @@ export default function Dashboard({
   const [tab, setTab] = useState<"album" | "share" | "guests" | "settings">(isNew ? "share" : "album");
   const [photos, setPhotos] = useState(initialPhotos);
   const [unlocked, setUnlocked] = useState(ev.downloadsUnlocked);
+  const [manualOpen, setManualOpen] = useState(false);
   const [sheet, setSheet] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const openSheet = (left?: number) => {
@@ -163,6 +165,11 @@ export default function Dashboard({
                   <button className="btn btn-accent btn-small" onClick={() => openSheet()}>
                     {t.pay.eventBtn} · {rupiah(pay.priceEvent)}
                   </button>
+                  {pay.manual && (
+                    <button type="button" className="uc-manual" onClick={() => setManualOpen(true)}>
+                      {t.pay.manualOr}: {t.pay.manualBtn} →
+                    </button>
+                  )}
                 </div>
               )
             )}
@@ -190,6 +197,14 @@ export default function Dashboard({
             initialOrder={initialOrder}
             onClose={() => setSheet(false)}
             onUnlocked={() => { setUnlocked(true); setSheet(false); router.replace(`/kelola/${ev.slug}`); router.refresh(); }}
+          />
+        )}
+        {pay.manual && (
+          <ManualQris
+            slug={ev.slug}
+            open={manualOpen}
+            onClose={() => setManualOpen(false)}
+            onUnlocked={() => { setUnlocked(true); setManualOpen(false); router.refresh(); }}
           />
         )}
         {tab === "share" && <Share ev={ev} guestUrl={guestUrl} adminUrl={adminUrl} />}

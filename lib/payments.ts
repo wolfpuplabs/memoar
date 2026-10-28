@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { cookies } from "next/headers";
 import { one, query } from "./db";
 import { track } from "./guard";
+import { manualAvailable } from "./manual-qris";
 import { hashToken, randomId, randomToken } from "./ids";
 import type { EventData } from "./events";
 
@@ -54,6 +55,8 @@ export function publicPayConfig(ev: EventData) {
     priceEvent: ev.packagePrice,
     pricePerson: c.pricePerson,
     freeDownloads: c.freeDownloads,
+    // the host may also pay large packages by manual QRIS (see lib/manual-qris.ts)
+    manual: manualAvailable(ev),
   };
 }
 export type PublicPayConfig = ReturnType<typeof publicPayConfig>;
@@ -127,7 +130,7 @@ export async function createPayment(ev: EventData, scope: Scope, origin: string,
   return { orderId, token: data.token, redirectUrl: data.redirect_url ?? null, amount };
 }
 
-type MidtransStatus = {
+export type MidtransStatus = {
   order_id?: string;
   status_code?: string;
   gross_amount?: string;
@@ -184,6 +187,7 @@ export async function applyStatus(n: MidtransStatus) {
 
 /** Asks Midtrans directly — covers a missed or slow webhook. */
 export async function refreshFromMidtrans(orderId: string) {
+  if (orderId.startsWith("MQ-")) return null; // manual QRIS: confirmed by the operator, not Midtrans
   const c = payConfig();
   const res = await fetch(`${c.apiUrl}/v2/${encodeURIComponent(orderId)}/status`, {
     headers: { accept: "application/json", authorization: auth(c.serverKey) },
@@ -213,6 +217,7 @@ export async function reconcilePending(ev: EventData, admin: boolean) {
   const rows = await query<{ order_id: string }>(
     `select order_id from payments
       where event_id = $1 and status = 'pending' and created_at > now() - interval '6 hours'
+        and payment_type is distinct from 'manual_qris'
         and ((scope = 'event' and $2::boolean) or (scope = 'person' and buyer_hash = $3))
       order by created_at desc limit 3`,
     [ev.id, admin, h]
